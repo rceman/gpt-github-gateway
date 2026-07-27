@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-github-gateway/protocol/v1/gateway.schema.json",
+  "title": "GPT GitHub Gateway Registry Entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "gateway_id", "status", "updated_at", "projects", "capabilities"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "gateway_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"},
+    "status": {"enum": ["online", "offline", "degraded"]},
+    "updated_at": {"type": "string", "format": "date-time"},
+    "projects": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+  }
+}

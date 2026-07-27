@@ -1,0 +1,4 @@
+/gpt-github-gateway
+*.log
+*.pid
+.DS_Store

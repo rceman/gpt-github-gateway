@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-github-gateway/protocol/v1/task.schema.json",
+  "title": "GPT GitHub Gateway Task",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "gateway_id",
+    "project_id",
+    "operation",
+    "submitted_at",
+    "request_path",
+    "patch_pack_path",
+    "result_branch",
+    "approval_required"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "task_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"},
+    "gateway_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"},
+    "project_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"},
+    "operation": {"const": "apply_patch_pack"},
+    "submitted_at": {"type": "string", "format": "date-time"},
+    "request_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"},
+    "patch_pack_path": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\).+$"},
+    "result_branch": {"type": "string", "pattern": "^agent/[A-Za-z0-9._/-]+$"},
+    "approval_required": {"type": "boolean"}
+  }
+}

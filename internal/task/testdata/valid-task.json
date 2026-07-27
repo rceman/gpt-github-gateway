@@ -1,0 +1,12 @@
+{
+  "schema_version": 1,
+  "task_id": "task_001",
+  "gateway_id": "home_pc",
+  "project_id": "gpt-github-gateway",
+  "operation": "apply_patch_pack",
+  "submitted_at": "2026-07-27T18:00:00Z",
+  "request_path": "request.md",
+  "patch_pack_path": "patch-pack",
+  "result_branch": "agent/task_001-gateway-foundation",
+  "approval_required": true
+}

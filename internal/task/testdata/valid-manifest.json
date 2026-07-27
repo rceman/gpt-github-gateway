@@ -1,0 +1,44 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260727-180000-test",
+  "title": "Protocol fixture",
+  "description": "Validates the pinned manifest loader.",
+  "created_at": "2026-07-27T18:00:00Z",
+  "patch_timestamp": "20260727-180000",
+  "patch_slug": "test",
+  "baseline_release": "v0.0.0",
+  "evidence_directory": ".gpt-review/evidence/v0.0.0/patch-20260727-180000-test",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-github-gateway",
+    "branch": "main",
+    "base_revision": "0123456789abcdef0123456789abcdef01234567"
+  },
+  "files_created": ["go.mod"],
+  "files_modified": [],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Fixture requirement",
+      "acceptance": ["AC-001: The fixture loads."]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-test",
+      "name": "Go tests",
+      "kind": "command",
+      "command": "go test ./..."
+    }
+  ],
+  "gpt_static_checks_performed": ["JSON fixture consistency"],
+  "gpt_runtime_checks_not_performed": ["go test ./..."],
+  "known_integration_risks": [],
+  "forbidden_deviations": ["Do not change behavior contract semantics."]
+}
