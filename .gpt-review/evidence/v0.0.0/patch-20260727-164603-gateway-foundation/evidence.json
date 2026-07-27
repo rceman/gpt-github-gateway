@@ -1,0 +1,237 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "01308fc2495c51edb44aa387ef4097be72d482bb",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/task/model.go",
+          "start_line": 24,
+          "end_line": 46,
+          "sha256": "69aa94aba1cb97d5a73c3e3702427becd0cd77b28c1d66026260116ef0577723",
+          "symbol": "type Envelope struct"
+        },
+        {
+          "kind": "source",
+          "path": "internal/app/app.go",
+          "start_line": 69,
+          "end_line": 101,
+          "sha256": "286b1de5dd809f9446e766f77be163758ec6be322e924865e22413abfa856a6c",
+          "symbol": "func (a *App) Once"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/config/config.go",
+          "start_line": 55,
+          "end_line": 73,
+          "sha256": "3a4220f8077a24e9390eaec823b09266ed91dadccb2209532945a33288fe82e2",
+          "symbol": "type ProjectConfig struct"
+        },
+        {
+          "kind": "source",
+          "path": "internal/config/config.go",
+          "start_line": 154,
+          "end_line": 170,
+          "sha256": "19f5351c9f5d3c0f3bf2f4c08a17a3d885c98b71bdffd4b4ca2e9c3fca444f7e",
+          "symbol": "project.SessionKey = id + \"_master\""
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 89,
+          "end_line": 146,
+          "sha256": "db18cc08cac734a79e12b87fe1fd238510b841a7f7862d708de513fd6f99f8bb",
+          "symbol": "func (b *Bus) Materialize"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/ARCHITECTURE.md",
+          "start_line": 28,
+          "end_line": 58,
+          "sha256": "448c2472675a99307cf1d31cbbb486256af07567b788202c2176852d88ff9ba7",
+          "symbol": "## Local state"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/gitx/git.go",
+          "start_line": 66,
+          "end_line": 116,
+          "sha256": "a4ad16e90ef1922c2f999d7226e862877b3fd384e70b0f9dae16fd935b9a94ef",
+          "symbol": "func (g Git) CreateWorktree"
+        },
+        {
+          "kind": "source",
+          "path": "internal/task/runner.go",
+          "start_line": 241,
+          "end_line": 273,
+          "sha256": "386706f6c95ba7e225bce522454c219d552a9eae33e02bae77b9bafa3977119e",
+          "symbol": "func (r *Runner) Rollback"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/airelay/client.go",
+          "start_line": 50,
+          "end_line": 100,
+          "sha256": "fac3b85a84d2a9450d7a9169d828f2cb2d32e0ac97b8ac926c2f5f6278b051ac",
+          "symbol": "func (c Client) EnsureSession"
+        },
+        {
+          "kind": "source",
+          "path": "internal/task/runner.go",
+          "start_line": 175,
+          "end_line": 199,
+          "sha256": "9eeb09fe12011ed15bb1c242e608086ff2c51c7c411f545b83f338fd80c5887f",
+          "symbol": "prompt := \"Read \""
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/task/model.go",
+          "start_line": 16,
+          "end_line": 30,
+          "sha256": "bff32e2f057de9aea46b884ca5d72172ee28e2c0676d0173b5c7d900daf569a9",
+          "symbol": "WorkflowCommit"
+        },
+        {
+          "kind": "source",
+          "path": "internal/task/runner.go",
+          "start_line": 352,
+          "end_line": 409,
+          "sha256": "480f3a504e6b9a03939675000897951904250952daf654da9678dcfedfa7d590",
+          "symbol": "func writeAgentRequest"
+        },
+        {
+          "kind": "source",
+          "path": "internal/task/runner.go",
+          "start_line": 488,
+          "end_line": 500,
+          "sha256": "d8bdd2a268cdc1c9b184c25e47120121397405d67907a9a01a5df0ea4f6e7063",
+          "symbol": "func verifyEvidence"
+        }
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "cmd/gpt-github-gateway/main.go",
+          "start_line": 37,
+          "end_line": 101,
+          "sha256": "0be72f6212f1fdb8864cc9b74915856c725bb7c74b1199c85d164cfa0a4c1ad7",
+          "symbol": "switch command"
+        },
+        {
+          "kind": "source",
+          "path": "internal/server/server.go",
+          "start_line": 17,
+          "end_line": 47,
+          "sha256": "c52ff23c92e712231d75bb2b5c05157d5c55b4de476e78c55b0360fbb54f1eb9",
+          "symbol": "func New(application"
+        }
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "internal/config/config_test.go",
+          "start_line": 6,
+          "end_line": 38,
+          "sha256": "4a7b36bfb522fcc8457f645a1c53513a8dc98013b9e5f25552bdcea33bc914d5",
+          "symbol": "func TestApplyDefaultsUsesProjectMasterSession"
+        },
+        {
+          "kind": "test",
+          "path": "internal/task/model_test.go",
+          "start_line": 55,
+          "end_line": 72,
+          "sha256": "90843a40b60d1380c11172272aa33fcdd4f1f70f031dc0021556ca427b6e47cc",
+          "symbol": "func TestCanonicalFixturesLoad"
+        },
+        {
+          "kind": "source",
+          "path": "go.mod",
+          "start_line": 1,
+          "end_line": 3,
+          "sha256": "1308f231b91a69c4144e6a5232c176e0c4be7a1f49fabbfb2ae7664131c71775",
+          "symbol": "module github.com/rceman/gpt-github-gateway"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go fmt ./... completed successfully."
+    },
+    {
+      "id": "go-vet",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go vet ./... completed successfully."
+    },
+    {
+      "id": "go-test",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go test ./... passed: 2 test packages passed; all packages passed."
+    },
+    {
+      "id": "go-build",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go build ./... completed successfully."
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "patch pack scope verification passed."
+    },
+    {
+      "id": "agent-evidence",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Evidence generated by the pinned pack helper; run verify-agent-evidence.py prepare next."
+    }
+  ],
+  "deviations": []
+}

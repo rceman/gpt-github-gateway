@@ -1,0 +1,208 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260727-164603-gateway-foundation",
+  "title": "GitHub gateway foundation",
+  "description": "Adds the multi-machine Go gateway, isolated patch execution, Airelay agent transport, and GPT Review Planner enforcement.",
+  "created_at": "2026-07-27T16:46:03Z",
+  "patch_timestamp": "20260727-164603",
+  "patch_slug": "gateway-foundation",
+  "baseline_release": "v0.0.0",
+  "evidence_directory": ".gpt-review/evidence/v0.0.0/patch-20260727-164603-gateway-foundation",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-github-gateway",
+    "branch": "main",
+    "base_revision": "ac3979455eefc2777e9290a520f93cebed79e95e"
+  },
+  "files_created": [
+    ".gitignore",
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "VERSION",
+    "cmd/gpt-github-gateway/main.go",
+    "docs/ARCHITECTURE.md",
+    "docs/PROTOCOL.md",
+    "docs/SECURITY.md",
+    "examples/config.json",
+    "go.mod",
+    "internal/airelay/client.go",
+    "internal/app/app.go",
+    "internal/bus/bus.go",
+    "internal/config/config.go",
+    "internal/config/config_test.go",
+    "internal/execx/detach_unix.go",
+    "internal/execx/detach_windows.go",
+    "internal/execx/errors.go",
+    "internal/execx/exec.go",
+    "internal/gitx/git.go",
+    "internal/server/server.go",
+    "internal/supervisor/process_unix.go",
+    "internal/supervisor/process_windows.go",
+    "internal/supervisor/supervisor.go",
+    "internal/task/model.go",
+    "internal/task/model_test.go",
+    "internal/task/runner.go",
+    "internal/task/testdata/valid-manifest.json",
+    "internal/task/testdata/valid-task.json",
+    "protocol/v1/agent-result.schema.json",
+    "protocol/v1/gateway.schema.json",
+    "protocol/v1/task.schema.json",
+    "scripts/install.sh"
+  ],
+  "files_modified": [
+    "README.md"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Address tasks by gateway and project identity",
+      "acceptance": [
+        "AC-001: Every executable task contains gateway_id, project_id, and task_id.",
+        "AC-002: A gateway processes only its own task subtree and configured projects.",
+        "AC-003: Project IDs may repeat across different gateway instances."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Keep all machine-sensitive agent configuration local",
+      "acceptance": [
+        "AC-004: Session key defaults to <project_id>_master.",
+        "AC-005: Airelay profile, session key, resume session ID, launch arguments, repository path, and executable are loaded only from local config.",
+        "AC-006: Remote tasks cannot submit shell commands or override local agent launch policy."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Use a file-based Git bus and local task workspace",
+      "acceptance": [
+        "AC-007: Remote tasks use tasks/<gateway>/<project>/<task> and preserve separate GPT-owned and gateway-owned files.",
+        "AC-008: Local task files live under ~/.gpt-github-gateway/<gateway>/<project>/tasks/<task>.",
+        "AC-009: Symlinks, unsafe relative paths, oversized files, and aggregate task overflow are rejected."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Apply GPT-authored patch packs without touching the user checkout",
+      "acceptance": [
+        "AC-010: Repository identity and exact base revision are verified before application.",
+        "AC-011: Each task uses an isolated Git worktree, agent/ branch, and backup ref.",
+        "AC-012: Patch application uses git apply --check followed by git apply --3way.",
+        "AC-013: Declared created, modified, and deleted file classes match the actual patch scope.",
+        "AC-014: Rollback removes only the task worktree and task branch; no stash or broad git clean is used."
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "summary": "Route local agent work exclusively through Airelay",
+      "acceptance": [
+        "AC-015: The gateway checks or starts the configured promptable Airelay session.",
+        "AC-016: Detailed instructions are written to a local agent-request file.",
+        "AC-017: The Airelay prompt is one short instruction pointing to the request file.",
+        "AC-018: The agent writes a concise Markdown response and machine JSON result to generated local paths."
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "summary": "Enforce the pinned GPT Review Planner workflow",
+      "acceptance": [
+        "AC-019: Patch manifests must pin gpt-review-planner v1.2.0 at commit 07ab94b358e8634fa0e547acaa0cf6e237ebbc2e.",
+        "AC-020: The local agent is instructed to run gates and make only verified narrow integration repairs.",
+        "AC-021: Successful results contain every manifest gate exactly once and preserve the two-commit evidence model.",
+        "AC-022: Evidence is verified before a successful result is published."
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "summary": "Provide a minimal standalone daemon and management CLI",
+      "acceptance": [
+        "AC-023: CLI supports init, project add, projects, once, run, start, stop, status, doctor, tasks, approve, reject, and rollback.",
+        "AC-024: The daemon polls the bus and publishes gateway, project, task status, response, and result data.",
+        "AC-025: The local HTTP API binds only to loopback and exposes health, readiness, status, projects, tasks, and local task actions."
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "summary": "Provide deterministic fixtures and native tests",
+      "acceptance": [
+        "AC-026: JSON protocol schemas define task, gateway, and agent-result contracts.",
+        "AC-027: Native Go tests cover config defaults, loopback enforcement, path safety, immutable workflow pinning, gate completeness, and canonical fixtures.",
+        "AC-028: No third-party Go runtime dependency is introduced."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "name": "Go formatting",
+      "kind": "command",
+      "command": "go fmt ./..."
+    },
+    {
+      "id": "go-vet",
+      "name": "Go static analysis",
+      "kind": "command",
+      "command": "go vet ./..."
+    },
+    {
+      "id": "go-test",
+      "name": "Go unit tests",
+      "kind": "command",
+      "command": "go test ./..."
+    },
+    {
+      "id": "go-build",
+      "name": "Go build",
+      "kind": "command",
+      "command": "go build ./..."
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    },
+    {
+      "id": "agent-evidence",
+      "name": "Committed agent evidence",
+      "kind": "evidence"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Inspected the actual initial repository commit and README content.",
+    "Authored behavior documentation, protocol schemas, native Go tests, production code, and executable patch payload.",
+    "Validated JSON syntax for configuration examples, protocol schemas, and patch manifest.",
+    "Parsed and statically type-checked all Go files with go/parser and go/types without building or executing project code.",
+    "Validated shell and Python helper syntax without executing project code.",
+    "Validated changes.patch path extraction against the declared created/modified/deleted manifest sets.",
+    "Validated git apply --check against a repository containing the exact base README content.",
+    "Checked the patch and authored tree for unresolved replacement placeholders."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "go fmt ./...",
+    "go vet ./...",
+    "go test ./...",
+    "go build ./...",
+    "Airelay session start, status, prompt, and response flow",
+    "GitHub bus clone, branch creation, commit, rebase, and push flow",
+    "daemon lifecycle and loopback HTTP runtime behavior"
+  ],
+  "known_integration_risks": [
+    "The current installed Airelay CLI must support start --key, session-status --json, and prompt --text.",
+    "The Git identity used by the local machine must be allowed to create or update the configured bus branch.",
+    "Cross-platform process supervision, especially Windows process liveness, requires agent runtime validation.",
+    "The initial patch is intentionally standard-library-only and may require narrow compile repairs for local Go version or platform API drift."
+  ],
+  "forbidden_deviations": [
+    "Do not replace Airelay with direct codex exec or another agent transport.",
+    "Do not accept commands, executables, session configuration, repository paths, or environment variables from remote tasks.",
+    "Do not modify, switch, stash, reset, or clean the user source checkout.",
+    "Do not weaken the immutable gpt-review-planner pin, exact file-scope checks, approval boundary, or evidence requirements.",
+    "Do not add third-party Go dependencies without explicit owner approval.",
+    "Do not redesign the protocol or broaden the local agent role into repository exploration or principal implementation."
+  ]
+}
