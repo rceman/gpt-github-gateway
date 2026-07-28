@@ -1,0 +1,220 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-102328-atomic-task-bundle",
+  "title": "Atomic task bundle transport",
+  "description": "Adds one-file validated task submission, structured JSON task documents, automatic Airelay dispatch, and one-file results.",
+  "created_at": "2026-07-28T10:23:28Z",
+  "patch_timestamp": "20260728-102328",
+  "patch_slug": "atomic-task-bundle",
+  "baseline_release": "v0.1.1",
+  "evidence_directory": ".gpt-review/evidence/v0.1.1/patch-20260728-102328-atomic-task-bundle",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-github-gateway",
+    "branch": "main",
+    "base_revision": "c11d910a3d76b9b8a2911a013ab3a718618f08a7"
+  },
+  "files_created": [
+    "docs/TASK_BUNDLE_V2.md",
+    "examples/task-spec.json",
+    "internal/app/app_test.go",
+    "internal/taskbundle/bundle.go",
+    "internal/taskbundle/bundle_test.go",
+    "protocol/v2/result.schema.json",
+    "protocol/v2/task-bundle.schema.json",
+    "protocol/v2/task-spec.schema.json",
+    "scripts/build-task-bundle.py",
+    "scripts/tests/test_task_bundle.py",
+    "scripts/validate-task-bundle.py"
+  ],
+  "files_modified": [
+    ".gitignore",
+    "CHANGELOG.md",
+    "README.md",
+    "VERSION",
+    "cmd/gpt-github-gateway/main.go",
+    "docs/ARCHITECTURE.md",
+    "docs/PROTOCOL.md",
+    "docs/SECURITY.md",
+    "examples/config.json",
+    "internal/app/app.go",
+    "internal/bus/bus.go",
+    "internal/config/config.go",
+    "internal/config/config_test.go",
+    "internal/task/handoff.go",
+    "internal/task/handoff_test.go",
+    "internal/task/runner.go"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Submit one complete atomic Git bus task",
+      "acceptance": [
+        "AC-001: Protocol v2 discovers exactly one inbox taskbundle JSON file per task identity.",
+        "AC-002: The bundle contains one deterministic base64 tar.gz patch pack with exact digest, compressed size, uncompressed size, and entry count.",
+        "AC-003: Reusing a task ID with a different archive digest is rejected as task_id_content_changed."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Materialize task bundles safely",
+      "acceptance": [
+        "AC-004: Bundle JSON is strict and duplicate keys, trailing data, unknown fields, invalid routing, and malformed timestamps are rejected.",
+        "AC-005: Archive extraction permits regular files only and rejects traversal, absolute or backslash paths, links, special files, duplicate paths, case-fold collisions, non-deterministic metadata, and size violations.",
+        "AC-006: AGENT_HANDOFF.md and manifest.json are mandatory and materialization uses a temporary directory followed by atomic rename."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Use a structured JSON task document",
+      "acceptance": [
+        "AC-007: task-spec.json and taskbundle.json use a validated task object with title, summary, objectives, constraints, acceptance criteria, and optional references.",
+        "AC-008: Protocol v2 materializes the task object as TASK_REQUEST.json instead of request.md.",
+        "AC-009: JSON is the only canonical gateway input; YAML is not parsed by the gateway and may only be converted externally before validation."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Dispatch trusted tasks automatically",
+      "acceptance": [
+        "AC-010: Local task_execution_mode supports auto, manual, and disabled with auto as the default.",
+        "AC-011: Auto mode bypasses per-task approval and resumes stale waiting_for_approval state without owner intervention.",
+        "AC-012: Remote task data cannot select or weaken the local execution mode, repository path, Airelay session, or process policy."
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "summary": "Validate canonical agent handoffs precisely",
+      "acceptance": [
+        "AC-013: Explicit unresolved placeholder patterns remain rejected.",
+        "AC-014: Normal shell redirection, comparison operators, XML fragments, and angle brackets are accepted.",
+        "AC-015: AGENT_HANDOFF.md remains the only normative agent entry point and AGENT_RESPONSE.md remains the canonical response file."
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "summary": "Publish one final atomic result",
+      "acceptance": [
+        "AC-016: Protocol-v2 completion writes one results path containing state, archive digest, commits, gates, deviations, and human response.",
+        "AC-017: Intermediate execution states remain local and are not committed individually to the Git bus.",
+        "AC-018: Protocol-v1 directory tasks remain read-compatible for existing audit records."
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "summary": "Build and validate bundles before publication",
+      "acceptance": [
+        "AC-019: build-task-bundle.py resolves the exact planner commit pinned by manifest.workflow.commit and runs its semantic patch-pack validator.",
+        "AC-020: The builder creates a deterministic archive, independently validates the complete bundle, emits compact canonical JSON, and atomically renames the output.",
+        "AC-021: Invalid packs, unsafe archives, malformed task documents, checksum mismatches, and oversized one-file outputs fail without a final output file."
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "summary": "Preserve compatibility and maintainability",
+      "acceptance": [
+        "AC-022: Native Go and Python tests cover auto-mode recovery, canonical response recovery, deterministic bundles, immutable materialization, traversal, links, duplicate JSON keys, case-fold collisions, and structured task validation.",
+        "AC-023: No third-party Go or Python runtime dependency is introduced.",
+        "AC-024: Version and documentation advance to 0.2.0 and describe the protocol and security boundary."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "name": "Go formatting",
+      "kind": "command",
+      "command": "go fmt ./..."
+    },
+    {
+      "id": "go-vet",
+      "name": "Go static analysis",
+      "kind": "command",
+      "command": "go vet ./..."
+    },
+    {
+      "id": "go-test",
+      "name": "Go unit tests",
+      "kind": "command",
+      "command": "go test ./..."
+    },
+    {
+      "id": "go-build",
+      "name": "Go build",
+      "kind": "command",
+      "command": "go build ./..."
+    },
+    {
+      "id": "python-test",
+      "name": "Python bundle tests",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s scripts/tests -v"
+    },
+    {
+      "id": "shell-syntax",
+      "name": "Shell syntax",
+      "kind": "command",
+      "command": "bash -n scripts/install.sh scripts/bootstrap-local.sh"
+    },
+    {
+      "id": "bundle-smoke",
+      "name": "Atomic bundle builder smoke",
+      "kind": "command",
+      "command": "python3 scripts/build-task-bundle.py --planner-root $HOME/.gpt-github-gateway/sources/gpt-review-planner --pack-root $PACK_ROOT --task-spec $PACK_ROOT/task-spec.json --output /tmp/gpt-gateway-atomic-smoke.taskbundle.json && python3 scripts/validate-task-bundle.py /tmp/gpt-gateway-atomic-smoke.taskbundle.json"
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    },
+    {
+      "id": "gateway-runtime",
+      "name": "Installed gateway runtime",
+      "kind": "command",
+      "command": "$HOME/.local/bin/gpt-github-gateway --config $HOME/.config/gpt-github-gateway/config.json status && $HOME/.local/bin/gpt-github-gateway --config $HOME/.config/gpt-github-gateway/config.json doctor && curl -fsS http://127.0.0.1:8787/readyz"
+    },
+    {
+      "id": "agent-evidence",
+      "name": "Committed agent evidence",
+      "kind": "evidence"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Inspected gpt-review-planner main at 98f4b2848915857c64523fe9d5c67519ed621a2c and confirmed that validate-patch-pack.py, validate-patch-pack-delivery.py, patch manifest schema, and patch-pack handoff documentation already exist.",
+    "Identified that the current planner validator still requires AGENT_PROMPT.md and does not yet make patch-pack/AGENT_HANDOFF.md or protocol-v2 task bundles canonical.",
+    "Authored the complete gateway implementation, Go and Python tests, JSON schemas, documentation, builder, transport validator, and executable Git patch.",
+    "Parsed all Python sources and JSON artifacts, parsed all Go files, and performed source-level Go type checking without building or testing the project.",
+    "Applied the complete patch to a disposable content-equivalent clean repository and checked Git whitespace and exact file-operation scope."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "go fmt ./... as an acceptance gate",
+    "go vet ./...",
+    "go test ./...",
+    "go build ./...",
+    "Python unit tests",
+    "live deterministic task-bundle publication to rceman/typer",
+    "live Airelay auto-dispatch",
+    "installation, daemon restart, registry publication, and loopback readiness",
+    "local archive quarantine and Git bus housekeeping"
+  ],
+  "known_integration_risks": [
+    "The repository declares Go 1.24 and the local agent must use the configured Go 1.24 toolchain.",
+    "GitHub one-file publication through the Contents API is intentionally capped below one megabyte; larger future packs require a different blob transport rather than silently splitting one task.",
+    "Until the planner follow-up release is merged, bundles remain compatible with the pinned v1.2.0 validator by including AGENT_PROMPT.md in addition to canonical AGENT_HANDOFF.md.",
+    "The two failed bootstrap cleanup tasks must be archived from the bus before the updated daemon starts so they cannot dispatch concurrently into the same Airelay session."
+  ],
+  "forbidden_deviations": [
+    "Do not move the canonical semantic patch-pack validator into rceman/typer or reimplement it as a divergent gateway contract.",
+    "Do not accept YAML directly in the gateway wire protocol or add a YAML dependency.",
+    "Do not restore per-task remote approval as the default trusted-bus execution model.",
+    "Do not weaken archive path, digest, size, regular-file-only, duplicate-key, duplicate-path, or task immutability checks.",
+    "Do not publish intermediate protocol-v2 statuses as separate Git commits.",
+    "Do not add third-party Go or Python dependencies, broaden repository file scope, or replace Airelay with direct Codex execution."
+  ]
+}

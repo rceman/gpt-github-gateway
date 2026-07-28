@@ -1,0 +1,288 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "65fd6a92f38bc350b1847797c284a70e1d652ce5",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 92,
+          "end_line": 157,
+          "sha256": "551fdfe1dacc9850319b34e787302b27adf02dbb9becdca373a5ccacd6f8a071",
+          "symbol": "func (b *Bus) Discover"
+        },
+        {
+          "kind": "test",
+          "path": "internal/taskbundle/bundle_test.go",
+          "start_line": 123,
+          "end_line": 150,
+          "sha256": "f3ee65022f51186b1b5cf7513d76f11648929e554ef46a6bc3c4e276635150f9",
+          "symbol": "func TestLoadAndMaterializeAtomicBundle"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/taskbundle/bundle.go",
+          "start_line": 324,
+          "end_line": 407,
+          "sha256": "17eb872299a8727dd39afb1a55e0d0194b4b7c713f8bdf276eb0a53497f43aa8",
+          "symbol": "func (b *Bundle) extract"
+        },
+        {
+          "kind": "test",
+          "path": "internal/taskbundle/bundle_test.go",
+          "start_line": 153,
+          "end_line": 169,
+          "sha256": "d2accee3e2b741a084cc0d2131404758ae3f3ca8c31ade1741cbe78576a022d7",
+          "symbol": "func TestRejectsLinksAndCaseFoldCollisions"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/taskbundle/bundle.go",
+          "start_line": 42,
+          "end_line": 74,
+          "sha256": "ef1f030586dac4d5e22e59aa7488c96d34a87ab7c8acaa5655925555505888b0",
+          "symbol": "type TaskDocument struct"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/TASK_BUNDLE_V2.md",
+          "start_line": 14,
+          "end_line": 44,
+          "sha256": "d3a95eef3f95975d558b6cb4fc1dc1a65f856d5d930ec34d4f281a3d6ab4c515",
+          "symbol": "## Authoring format"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/config/config.go",
+          "start_line": 17,
+          "end_line": 43,
+          "sha256": "8a0f11b02d806b7e4693b3384c5288d9dea27436e2034c77d0e22dd7fbccc0c1",
+          "symbol": "ExecutionModeAuto"
+        },
+        {
+          "kind": "source",
+          "path": "internal/task/runner.go",
+          "start_line": 77,
+          "end_line": 111,
+          "sha256": "a6fe68b479791c9fe7a9e8c1f1496bbe53d65679de68cd1d2ab3c1f608fe2b89",
+          "symbol": "switch r.Config.Gateway.TaskExecutionMode"
+        },
+        {
+          "kind": "test",
+          "path": "internal/app/app_test.go",
+          "start_line": 11,
+          "end_line": 38,
+          "sha256": "c669980364994db809e298e85b19d5f6e729137dde91c4db22ca88195873893f",
+          "symbol": "func TestAutoModeResumesWaitingForApproval"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/task/handoff.go",
+          "start_line": 18,
+          "end_line": 49,
+          "sha256": "b146519bf4cb849c4a0f5d64a56d8c3b6508eb21a4b35787772cc19827b29ea1",
+          "symbol": "unresolvedHandoffPatterns"
+        },
+        {
+          "kind": "test",
+          "path": "internal/task/handoff_test.go",
+          "start_line": 85,
+          "end_line": 105,
+          "sha256": "315d46e407daa02c041cf17e324b65fed85d1f9033d85602f57b1fb232dc6dc8",
+          "symbol": "func TestLoadAgentHandoffAcceptsNormalAngleBracketsAndRedirects"
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 251,
+          "end_line": 292,
+          "sha256": "a5702c1f6425e875d89207aa215fa438f755b7ff07a46813e15db0aae38afd79",
+          "symbol": "func (b *Bus) PublishAtomicResult"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/ARCHITECTURE.md",
+          "start_line": 17,
+          "end_line": 43,
+          "sha256": "2b489c3ac4283bdfab62e879e0e0dd9b9d50d2b3cc7098650851db11b2193bca",
+          "symbol": "## Git bus"
+        }
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/build-task-bundle.py",
+          "start_line": 76,
+          "end_line": 127,
+          "sha256": "cccf32dccf10dcd05f72f1c48a411b8e612c1142b93edda503ceed873da4844f",
+          "symbol": "def run_planner_validation"
+        },
+        {
+          "kind": "source",
+          "path": "scripts/validate-task-bundle.py",
+          "start_line": 209,
+          "end_line": 262,
+          "sha256": "7d915ddbe2d79a9440bceebf9da2b0141e6f6b5fbfe78c0d8761649521aa35e3",
+          "symbol": "def validate_bundle"
+        },
+        {
+          "kind": "test",
+          "path": "scripts/tests/test_task_bundle.py",
+          "start_line": 61,
+          "end_line": 81,
+          "sha256": "1e12f8b21477becfd9513f41c888b6f8e83fdd1051d5fdced7bbb7c0e7387e17",
+          "symbol": "def test_deterministic_archive_and_validation"
+        }
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "internal/taskbundle/bundle_test.go",
+          "start_line": 112,
+          "end_line": 130,
+          "sha256": "b30fbed1f54d88b8f004e265cf777ea278ecb7582e8d289a585e168ed040047c",
+          "symbol": "func TestRejectsDuplicateJSONKeys"
+        },
+        {
+          "kind": "source",
+          "path": "VERSION",
+          "start_line": 1,
+          "end_line": 1,
+          "sha256": "1f930dd1f133c1f97a94fe3acb8db34372cf4c01ffdb2b3ff4ca72f9494121e9",
+          "symbol": "0.2.0"
+        },
+        {
+          "kind": "source",
+          "path": "go.mod",
+          "start_line": 1,
+          "end_line": 3,
+          "sha256": "1308f231b91a69c4144e6a5232c176e0c4be7a1f49fabbfb2ae7664131c71775",
+          "symbol": "module github.com/rceman/gpt-github-gateway"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go fmt ./... passed."
+    },
+    {
+      "id": "go-vet",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go vet ./... passed."
+    },
+    {
+      "id": "go-test",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go test ./... passed: 4 test packages; all packages passed."
+    },
+    {
+      "id": "go-build",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go build ./... passed."
+    },
+    {
+      "id": "python-test",
+      "status": "pass",
+      "exit": 0,
+      "summary": "python3 -m unittest discover -s scripts/tests -v passed: 4 tests."
+    },
+    {
+      "id": "shell-syntax",
+      "status": "pass",
+      "exit": 0,
+      "summary": "bash -n scripts/install.sh scripts/bootstrap-local.sh passed."
+    },
+    {
+      "id": "bundle-smoke",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Bundle build and validation passed; SHA256 aab017cbdc0d8f2041ec0bae2f948193a4e258b12975691bfdccfdf3002b635b; compressed 48273 bytes; uncompressed 199192 bytes; 48 entries."
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Exact patch scope verification passed."
+    },
+    {
+      "id": "gateway-runtime",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Gateway status, doctor, readiness, and Airelay session checks passed after startup retry; readiness returned ready; PID 1225357."
+    },
+    {
+      "id": "agent-evidence",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Evidence generated by the pinned helper; committed verification follows."
+    }
+  ],
+  "deviations": [
+    {
+      "kind": "test-fixture-repair",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "Fixed scripts/tests/test_task_bundle.py to use separate temporary roots for two independent pack fixtures; regression gate passed with all 4 tests."
+    },
+    {
+      "kind": "runtime-startup",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "The first readiness probes returned HTTP 503 during daemon startup; readiness returned ready after the normal polling cycle."
+    },
+    {
+      "kind": "tooling",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "verify-agent-result.sh prepare fails because its embedded scope verifier counts the two required staged evidence files as extra created paths; committed verification is used after the exact evidence-only commit."
+    }
+  ]
+}
