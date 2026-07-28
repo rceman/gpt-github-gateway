@@ -62,6 +62,10 @@ func (r *Runner) Run(ctx context.Context, projectID, taskID string) (RunOutcome,
 	if err != nil {
 		return RunOutcome{}, err
 	}
+	handoffSource, err := LoadAgentHandoff(packRoot, manifest)
+	if err != nil {
+		return RunOutcome{}, err
+	}
 	if manifest.Target.Repository != project.Repository {
 		return RunOutcome{}, fmt.Errorf("patch target repository %s does not match local project %s", manifest.Target.Repository, project.Repository)
 	}
@@ -92,7 +96,7 @@ func (r *Runner) Run(ctx context.Context, projectID, taskID string) (RunOutcome,
 	}
 
 	worktree := r.Layout.WorktreeRoot(projectID, taskID)
-	responsePath := filepath.Join(taskRoot, "agent-response.md")
+	responsePath := filepath.Join(taskRoot, AgentResponseFilename)
 	resultPath := filepath.Join(taskRoot, "agent-result.json")
 	if regularFile(resultPath) && regularFile(responsePath) {
 		return r.finalizeAgentResult(ctx, envelope, manifest, taskRoot, worktree, resultPath, responsePath)
@@ -153,10 +157,10 @@ func (r *Runner) Run(ctx context.Context, projectID, taskID string) (RunOutcome,
 	if err != nil {
 		return RunOutcome{}, err
 	}
-	agentRequestPath := filepath.Join(taskRoot, "agent-request.md")
+	handoffPath := filepath.Join(taskRoot, AgentHandoffFilename)
 	_ = os.Remove(responsePath)
 	_ = os.Remove(resultPath)
-	if err := writeAgentRequest(agentRequestPath, agentRequest{
+	if err := WriteRuntimeHandoff(handoffPath, handoffSource, RuntimeHandoffContext{
 		TaskID:       taskID,
 		ProjectID:    projectID,
 		Worktree:     worktree,
@@ -180,7 +184,7 @@ func (r *Runner) Run(ctx context.Context, projectID, taskID string) (RunOutcome,
 		_ = WriteStatus(taskRoot, status)
 		return RunOutcome{Envelope: envelope, Manifest: manifest, Status: status}, nil
 	}
-	prompt := "Read " + agentRequestPath + " and execute it. Write the requested result files."
+	prompt := "Read " + handoffPath + " and execute it exactly."
 	if err := r.Airelay.Prompt(ctx, project.SessionKey, prompt); err != nil {
 		return RunOutcome{}, err
 	}
@@ -334,74 +338,6 @@ func writeJSONAtomic(path string, value any) error {
 		return err
 	}
 	return os.Rename(temp, path)
-}
-
-type agentRequest struct {
-	TaskID       string
-	ProjectID    string
-	Worktree     string
-	PackRoot     string
-	OwnerRequest string
-	ResponsePath string
-	ResultPath   string
-	PatchApplied bool
-	PatchRepair  bool
-	ResultBranch string
-	BaseRevision string
-	EvidenceDir  string
-}
-
-func writeAgentRequest(path string, request agentRequest) error {
-	patchState := "The GPT-authored patch has already been applied and its declared file scope has been verified."
-	if request.PatchRepair {
-		patchState = "Automatic patch application failed. Apply the supplied payload manually only within the manifest-declared scope, then continue. Do not redesign."
-	}
-	content := fmt.Sprintf(`# Local Agent Runtime Task
-
-Task: %s
-Project: %s
-Worktree: %s
-Result branch: %s
-Base revision: %s
-
-%s
-
-Read only what is required:
-
-1. Owner request: %s
-2. Patch manifest: %s
-3. Already changed files and direct runtime failures.
-
-Mandatory workflow pin:
-
-- repository: %s
-- version: %s
-- commit: %s
-- document: %s
-
-Your role is constrained to repository operation, runtime validation, and narrow integration repair.
-
-Do not perform broad repository exploration. Do not redesign behavior. Do not add dependencies, expand scope, weaken tests, change acceptance criteria, or promote optional hardening into this task.
-
-Required procedure:
-
-1. Verify the worktree branch and base.
-2. Preserve the manifest's exact created/modified/deleted file classes.
-3. Run every manifest gate exactly as written.
-4. Fix only directly observed compile, formatting, type, fixture, test-harness, or environment integration defects.
-5. Add regression coverage only for a repair you actually make.
-6. Run all gates again.
-7. Create the implementation commit.
-8. Create the evidence-only commit containing exactly:
-   - %s/manifest.json
-   - %s/evidence.json
-9. Run the patch-pack evidence verifier.
-10. Write a concise report to: %s
-11. Write machine JSON matching protocol/v1/agent-result.schema.json to: %s
-
-The JSON status must be one of succeeded, failed, or needs_gpt_revision. A successful result must list every manifest gate once with status=pass and exit=0, and must include both commit SHAs.
-`, request.TaskID, request.ProjectID, request.Worktree, request.ResultBranch, request.BaseRevision, patchState, request.OwnerRequest, filepath.Join(request.PackRoot, "manifest.json"), WorkflowRepository, WorkflowVersion, WorkflowCommit, WorkflowDocument, request.EvidenceDir, request.EvidenceDir, request.ResponsePath, request.ResultPath)
-	return os.WriteFile(path, []byte(content), 0o600)
 }
 
 func applyOverlay(packRoot, worktree string) error {

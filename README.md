@@ -16,7 +16,7 @@ rceman/typer
 gpt-github-gateway
   │ isolated Git worktree + owner approval
   ▼
-airelay prompt <project_session_key> "Read <local request file>"
+airelay prompt <project_session_key> "Read <AGENT_HANDOFF.md>"
   │
   ▼
 Codex Luna Low
@@ -33,6 +33,8 @@ GPT delta review
 - projects are local to one gateway and are addressed by `gateway_id + project_id`;
 - project `session_key` defaults to `<project_id>_master`;
 - no remote task may choose an executable, shell command, Airelay profile, session key, resume ID, or sandbox policy;
+- every executable patch pack must contain a complete canonical `AGENT_HANDOFF.md`;
+- the gateway appends local runtime paths to that handoff and expects `AGENT_RESPONSE.md` plus `agent-result.json`;
 - task instructions and agent responses are files under `~/.gpt-github-gateway/<gateway_id>/<project_id>/tasks/<task_id>/`;
 - the user's existing project checkout is never switched, stashed, reset, or cleaned;
 - patch application occurs in a task-specific Git worktree and can be rolled back independently;
@@ -67,6 +69,17 @@ gpt-github-gateway project add \
 ```
 
 The generated session key is `gpt-github-gateway_master`. It can be overridden only in the local configuration.
+
+For the first machine bootstrap, install, configure, start, and verify the daemon in one command:
+
+```bash
+bash scripts/bootstrap-local.sh \
+  --gateway home_pc \
+  --project-path "$PWD" \
+  --resume-session <CODEX_SESSION_ID>
+```
+
+The script never stores GitHub or Airelay credentials and uses existing host Git/SSH and Airelay configuration.
 
 ## Commands
 

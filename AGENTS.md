@@ -11,3 +11,5 @@ GPT owns architecture, behavior, tests, fixtures, and the principal implementati
 The local agent applies supplied patch packs, runs runtime gates, fixes only verified narrow integration defects, and records evidence.
 
 Do not redesign supplied behavior, broaden scope, add dependencies, weaken tests, or perform an unconstrained repository review during patch-pack execution.
+
+Every executable patch pack must contain `AGENT_HANDOFF.md`. The gateway-generated local `AGENT_HANDOFF.md` is the only normative runtime entry point for the local coding agent; the response file is `AGENT_RESPONSE.md`.

@@ -43,10 +43,32 @@ func (b *Bus) Ensure(ctx context.Context) error {
 		return nil
 	}
 	_ = os.RemoveAll(b.Root)
-	if _, err := execx.Run(ctx, "", b.Git, "clone", b.Config.URL, b.Root); err != nil {
+	if _, err := execx.Run(ctx, "", b.Git, "clone", "--no-checkout", b.Config.URL, b.Root); err != nil {
 		return err
 	}
-	if _, err := execx.Run(ctx, b.Root, b.Git, "checkout", "-b", b.Config.Branch); err != nil {
+	if err := b.initializeOrphanBranch(ctx); err == nil {
+		return nil
+	}
+	_ = os.RemoveAll(b.Root)
+	_, err := execx.Run(ctx, "", b.Git, "clone", "--branch", b.Config.Branch, "--single-branch", b.Config.URL, b.Root)
+	return err
+}
+
+func (b *Bus) initializeOrphanBranch(ctx context.Context) error {
+	if _, err := execx.Run(ctx, b.Root, b.Git, "checkout", "--orphan", b.Config.Branch); err != nil {
+		return err
+	}
+	if _, err := execx.Run(ctx, b.Root, b.Git, "rm", "-rf", "--ignore-unmatch", "."); err != nil {
+		return err
+	}
+	readme := []byte("# GPT GitHub Gateway Bus\n\nRuntime task and status branch managed by gpt-github-gateway.\n")
+	if err := os.WriteFile(filepath.Join(b.Root, "README.md"), readme, 0o600); err != nil {
+		return err
+	}
+	if _, err := execx.Run(ctx, b.Root, b.Git, "add", "--", "README.md"); err != nil {
+		return err
+	}
+	if _, err := execx.Run(ctx, b.Root, b.Git, "commit", "-m", "gateway: initialize bus branch"); err != nil {
 		return err
 	}
 	_, err := execx.Run(ctx, b.Root, b.Git, "push", "-u", "origin", b.Config.Branch)

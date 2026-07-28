@@ -10,6 +10,7 @@ tasks/<gateway_id>/<project_id>/<task_id>/
 ├── task.json
 ├── request.md
 ├── patch-pack/
+│   ├── AGENT_HANDOFF.md
 │   ├── manifest.json
 │   ├── evidence.json
 │   ├── patch/changes.patch
@@ -47,6 +48,8 @@ Paths are normalized relative paths inside the task directory. Absolute paths, b
 
 ## Workflow enforcement
 
+Every executable patch pack must contain `patch-pack/AGENT_HANDOFF.md`. It is the single canonical instruction entry point for the local agent and must identify the patch, repository, base revision, and immutable workflow pin. The gateway rejects missing, incomplete, symlinked, oversized, or placeholder-containing handoffs. It copies the validated handoff to the local task root, appends machine-local runtime paths, and sends only a short Airelay prompt pointing to that file.
+
 The patch manifest must pin:
 
 ```text
@@ -60,7 +63,7 @@ The target repository must match the local project registry. The target base rev
 
 ## Agent result
 
-The agent writes `agent-result.json` and `agent-response.md` to the paths named in the generated local request.
+The agent writes `agent-result.json` and `AGENT_RESPONSE.md` to the paths named in the gateway runtime appendix of `AGENT_HANDOFF.md`.
 
 A successful result must include every manifest gate exactly once with `status: pass`, plus implementation and evidence commit SHAs.
 
