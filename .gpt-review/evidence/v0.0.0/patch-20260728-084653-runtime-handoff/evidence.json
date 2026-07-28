@@ -1,0 +1,208 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "d9b987877443d867e6136d6116147966bd75a54b",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/task/handoff.go",
+          "start_line": 43,
+          "end_line": 114,
+          "sha256": "8a8db94b95302ba4e2f61e32aa514bf62210e4d03b30fd655fdabcdf9bd4c51c",
+          "symbol": "func LoadAgentHandoff"
+        },
+        {
+          "kind": "test",
+          "path": "internal/task/handoff_test.go",
+          "start_line": 61,
+          "end_line": 80,
+          "sha256": "53c0343ca5f160481750529280ad6e8859ac25ba8e7ab69664f56c0279f2f0d1",
+          "symbol": "func TestLoadAgentHandoffRejectsMissingHeading"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/task/handoff.go",
+          "start_line": 113,
+          "end_line": 148,
+          "sha256": "9e69228d546215f006775d0b1b5441ef62bdcf45cadb2858634a9c2e03dc3979",
+          "symbol": "func WriteRuntimeHandoff"
+        },
+        {
+          "kind": "source",
+          "path": "internal/task/runner.go",
+          "start_line": 178,
+          "end_line": 195,
+          "sha256": "e6eff1ba9fded36355b6fddc9f3b1b54fe3bf5bb3167769c237f63fecc2f0772",
+          "symbol": "prompt := \"Read \""
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/task/handoff.go",
+          "start_line": 11,
+          "end_line": 22,
+          "sha256": "664030ebdb313a14ded279ce36c229541b9f49c9466f84176651b89dd01cb97e",
+          "symbol": "AgentResponseFilename"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/PROTOCOL.md",
+          "start_line": 61,
+          "end_line": 70,
+          "sha256": "fcf4712c3e23a246b61dcf0c53a246e0b3f84ba664fbad8828b89d9595803477",
+          "symbol": "AGENT_RESPONSE.md"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 40,
+          "end_line": 95,
+          "sha256": "c3d212586630940dd1699b87910a4bef15933b968dc61d3ac8d69d060461b985",
+          "symbol": "func (b *Bus) initializeOrphanBranch"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/bootstrap-local.sh",
+          "start_line": 21,
+          "end_line": 93,
+          "sha256": "bc01dc5c37d74dfdbb2e856a60bd75f9e478dbee03ac8f729383613d21c70b3d",
+          "symbol": "gateway_bin="
+        },
+        {
+          "kind": "documentation",
+          "path": "README.md",
+          "start_line": 70,
+          "end_line": 88,
+          "sha256": "a5a35bde1497eac6e453c3512881f2eb78e883e407f9ca07b586bdd2a1ce3992",
+          "symbol": "For the first machine bootstrap"
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "test",
+          "path": "internal/task/handoff_test.go",
+          "start_line": 85,
+          "end_line": 116,
+          "sha256": "f652b1fc93e88201e0f2bd18a265c5acde0689a70065c3f3dbdc10335c03fd1f",
+          "symbol": "func TestWriteRuntimeHandoffAddsAuthoritativePaths"
+        },
+        {
+          "kind": "source",
+          "path": "go.mod",
+          "start_line": 1,
+          "end_line": 3,
+          "sha256": "1308f231b91a69c4144e6a5232c176e0c4be7a1f49fabbfb2ae7664131c71775",
+          "symbol": "module github.com/rceman/gpt-github-gateway"
+        },
+        {
+          "kind": "source",
+          "path": "VERSION",
+          "start_line": 1,
+          "end_line": 1,
+          "sha256": "80447316529fc62014fbaa047fb67c51ac30e32830cda370405349d8d66d196c",
+          "symbol": "0.1.1"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go fmt ./... passed."
+    },
+    {
+      "id": "go-vet",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go vet ./... passed."
+    },
+    {
+      "id": "go-test",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go test ./... passed: 2 test packages; all packages passed."
+    },
+    {
+      "id": "go-build",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go build ./... passed."
+    },
+    {
+      "id": "shell-syntax",
+      "status": "pass",
+      "exit": 0,
+      "summary": "bash -n scripts/install.sh scripts/bootstrap-local.sh passed."
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Exact patch scope verification passed."
+    },
+    {
+      "id": "gateway-bootstrap",
+      "status": "pass",
+      "exit": 0,
+      "summary": "home_pc bootstrap succeeded; gateway PID 1103755."
+    },
+    {
+      "id": "gateway-runtime",
+      "status": "pass",
+      "exit": 0,
+      "summary": "status and doctor passed; /readyz returned ready."
+    },
+    {
+      "id": "agent-evidence",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Evidence generated by pinned helper."
+    }
+  ],
+  "deviations": [
+    {
+      "kind": "patch-application-integration",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "apply_patch_pack.py --check rejected one runner.go context; the supplied patch applied successfully with git apply --3way and the resulting scope matched the manifest."
+    },
+    {
+      "kind": "tooling",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "verify-agent-evidence.py prepare cannot pass after evidence generation because its embedded scope verifier counts the required evidence files as extra created paths; committed verification is used after the exact evidence-only commit."
+    }
+  ]
+}

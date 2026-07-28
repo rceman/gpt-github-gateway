@@ -1,0 +1,178 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260728-084653-runtime-handoff",
+  "title": "Runtime handoff bootstrap",
+  "description": "Enforces canonical agent handoffs, creates a clean Git bus branch, and bootstraps the local gateway service.",
+  "created_at": "2026-07-28T08:46:53Z",
+  "patch_timestamp": "20260728-084653",
+  "patch_slug": "runtime-handoff",
+  "baseline_release": "v0.0.0",
+  "evidence_directory": ".gpt-review/evidence/v0.0.0/patch-20260728-084653-runtime-handoff",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-github-gateway",
+    "branch": "main",
+    "base_revision": "a3e33bc01cbeca892eb459f1ddc762c7c207906c"
+  },
+  "files_created": [
+    "internal/task/handoff.go",
+    "internal/task/handoff_test.go",
+    "scripts/bootstrap-local.sh"
+  ],
+  "files_modified": [
+    "AGENTS.md",
+    "CHANGELOG.md",
+    "README.md",
+    "VERSION",
+    "cmd/gpt-github-gateway/main.go",
+    "docs/PROTOCOL.md",
+    "internal/bus/bus.go",
+    "internal/task/runner.go"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Require a canonical GPT-authored agent handoff",
+      "acceptance": [
+        "AC-001: Every executable patch pack must contain AGENT_HANDOFF.md.",
+        "AC-002: The handoff must be a bounded regular non-symlink file with all required canonical headings.",
+        "AC-003: Unresolved placeholders and handoffs that do not identify the manifest patch, repository, base revision, and immutable workflow pin are rejected before execution."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Use the handoff as the only local-agent instruction entry point",
+      "acceptance": [
+        "AC-004: The gateway copies the validated GPT-authored handoff to the local task root and appends authoritative machine-local runtime paths.",
+        "AC-005: The Airelay prompt is a single short line pointing only to the generated AGENT_HANDOFF.md.",
+        "AC-006: The gateway no longer generates a competing agent-request.md instruction document."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Standardize the local agent response contract",
+      "acceptance": [
+        "AC-007: The local Markdown response path is AGENT_RESPONSE.md.",
+        "AC-008: The machine result remains agent-result.json and successful result verification remains unchanged.",
+        "AC-009: Documentation and repository agent policy use the same canonical names."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Bootstrap a clean dedicated Git bus branch",
+      "acceptance": [
+        "AC-010: If the configured bus branch does not exist, the gateway creates it as an orphan branch rather than inheriting the typer main tree.",
+        "AC-011: Concurrent first-creation races recover by recloning the newly created remote branch.",
+        "AC-012: The clean bus branch contains only gateway-owned runtime content and its own short README baseline."
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "summary": "Provide deterministic first-machine service bootstrap",
+      "acceptance": [
+        "AC-013: A single script installs the Go binary, creates or reuses local configuration, registers the project, and starts the daemon.",
+        "AC-014: Bootstrap verifies process status, doctor output, and loopback readiness before succeeding.",
+        "AC-015: Credentials and machine-sensitive Airelay configuration remain local and are not written to the Git bus."
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "summary": "Preserve a small standard-library-only implementation",
+      "acceptance": [
+        "AC-016: Native Go tests cover valid, incomplete, placeholder-containing, and runtime-augmented handoffs.",
+        "AC-017: No third-party Go dependency is introduced.",
+        "AC-018: Version and changelog advance to 0.1.1."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "name": "Go formatting",
+      "kind": "command",
+      "command": "go fmt ./..."
+    },
+    {
+      "id": "go-vet",
+      "name": "Go static analysis",
+      "kind": "command",
+      "command": "go vet ./..."
+    },
+    {
+      "id": "go-test",
+      "name": "Go unit tests",
+      "kind": "command",
+      "command": "go test ./..."
+    },
+    {
+      "id": "go-build",
+      "name": "Go build",
+      "kind": "command",
+      "command": "go build ./..."
+    },
+    {
+      "id": "shell-syntax",
+      "name": "Shell script syntax",
+      "kind": "command",
+      "command": "bash -n scripts/install.sh scripts/bootstrap-local.sh"
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    },
+    {
+      "id": "gateway-bootstrap",
+      "name": "Home gateway service bootstrap",
+      "kind": "command",
+      "command": "PRIMARY_REPO=$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -n 1) && bash scripts/bootstrap-local.sh --gateway home_pc --project-path \"$PRIMARY_REPO\" --resume-session 019efe9b-294a-7362-84da-875a68bbd645"
+    },
+    {
+      "id": "gateway-runtime",
+      "name": "Gateway runtime readiness",
+      "kind": "command",
+      "command": "$HOME/.local/bin/gpt-github-gateway status && $HOME/.local/bin/gpt-github-gateway doctor && curl -fsS http://127.0.0.1:8787/readyz"
+    },
+    {
+      "id": "agent-evidence",
+      "name": "Committed agent evidence",
+      "kind": "evidence"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Inspected the merged gateway implementation and its committed evidence on GitHub.",
+    "Authored complete Go source, native tests, protocol documentation, bootstrap shell code, and an executable Git patch.",
+    "Checked manifest and patch file-operation scope consistency.",
+    "Parsed JSON and Python artifacts and checked shell syntax without executing project runtime gates.",
+    "Performed source-level Go parsing and type inspection without building or testing the project."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "go fmt ./... as an acceptance gate",
+    "go vet ./...",
+    "go test ./...",
+    "go build ./...",
+    "live Airelay session start and prompt flow",
+    "live Git bus orphan-branch creation and publication",
+    "daemon process, doctor, and loopback readiness checks"
+  ],
+  "known_integration_risks": [
+    "The user-provided Codex resume session ID must still be valid on home_pc.",
+    "Host Git identity and SSH credentials must permit creation of the ai-workspace-bus branch in rceman/typer.",
+    "An existing local gateway config with a different gateway identity requires owner review rather than forced overwrite.",
+    "The agent must validate git apply --3way against the exact remote base commit; GPT artifact validation used a content-equivalent reconstructed repository for direct patch application."
+  ],
+  "forbidden_deviations": [
+    "Do not weaken or bypass AGENT_HANDOFF.md validation.",
+    "Do not restore agent-request.md as a competing instruction source.",
+    "Do not replace Airelay with direct codex exec.",
+    "Do not create the Git bus branch from the typer main working tree.",
+    "Do not force-overwrite an existing local configuration without owner authorization.",
+    "Do not add third-party Go dependencies or broaden the local agent role."
+  ]
+}
