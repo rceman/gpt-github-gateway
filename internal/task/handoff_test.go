@@ -84,6 +84,18 @@ func TestLoadAgentHandoffRejectsPlaceholder(t *testing.T) {
 	}
 }
 
+func TestLoadAgentHandoffAcceptsNormalAngleBracketsAndRedirects(t *testing.T) {
+	root := t.TempDir()
+	manifest := handoffManifest()
+	text := validHandoff(manifest) + "Run: printf result > output.txt and compare value < limit.\n"
+	if err := os.WriteFile(filepath.Join(root, AgentHandoffFilename), []byte(text), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := LoadAgentHandoff(root, manifest); err != nil {
+		t.Fatalf("normal angle brackets and redirects must be accepted: %v", err)
+	}
+}
+
 func TestWriteRuntimeHandoffAddsAuthoritativePaths(t *testing.T) {
 	path := filepath.Join(t.TempDir(), AgentHandoffFilename)
 	manifest := handoffManifest()
@@ -92,7 +104,7 @@ func TestWriteRuntimeHandoffAddsAuthoritativePaths(t *testing.T) {
 		ProjectID:    "gpt-github-gateway",
 		Worktree:     "/tmp/worktree",
 		PackRoot:     "/tmp/task/patch-pack",
-		OwnerRequest: "/tmp/task/request.md",
+		OwnerRequest: "/tmp/task/TASK_REQUEST.json",
 		ResponsePath: "/tmp/task/AGENT_RESPONSE.md",
 		ResultPath:   "/tmp/task/agent-result.json",
 		ResultBranch: "agent/task_001",

@@ -8,13 +8,13 @@ GitHub-backed local gateway for GPT-authored patch execution, validation, and ag
 
 ```text
 GPT
-  │ writes task + executable patch pack
+  │ builds one validated taskbundle.json
   ▼
 rceman/typer
-  │ tasks/<gateway_id>/<project_id>/<task_id>/
+  │ inbox/<gateway_id>/<project_id>/<task_id>.taskbundle.json
   ▼
 gpt-github-gateway
-  │ isolated Git worktree + owner approval
+  │ safe extraction + isolated Git worktree + automatic dispatch
   ▼
 airelay prompt <project_session_key> "Read <AGENT_HANDOFF.md>"
   │
@@ -38,7 +38,10 @@ GPT delta review
 - task instructions and agent responses are files under `~/.gpt-github-gateway/<gateway_id>/<project_id>/tasks/<task_id>/`;
 - the user's existing project checkout is never switched, stashed, reset, or cleaned;
 - patch application occurs in a task-specific Git worktree and can be rolled back independently;
-- the pinned `gpt-review-planner` manifest, declared file scope, base revision, approval, and evidence contract are mandatory.
+- the pinned `gpt-review-planner` manifest, declared file scope, base revision, and evidence contract are mandatory;
+- protocol-v2 tasks are one deterministic base64 tar.gz bundle inside one JSON file and one Git commit;
+- local `task_execution_mode` defaults to `auto`; `manual` and `disabled` remain emergency policies;
+- JSON is the canonical task authoring and transport format; Markdown remains the final agent-readable `AGENT_HANDOFF.md`.
 
 ## Install
 
@@ -101,4 +104,4 @@ gpt-github-gateway task rollback <project_id> <task_id>
 
 The local HTTP API listens on `127.0.0.1:8787` by default and exposes health, readiness, status, project, and task views for a future AI Workspace UI.
 
-See `docs/ARCHITECTURE.md`, `docs/PROTOCOL.md`, and `docs/SECURITY.md`.
+See `docs/ARCHITECTURE.md`, `docs/PROTOCOL.md`, `docs/TASK_BUNDLE_V2.md`, and `docs/SECURITY.md`.

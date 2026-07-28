@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-github-gateway/protocol/v2/task-bundle.schema.json",
+  "title": "GPT GitHub Gateway Atomic Task Bundle",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "gateway_id",
+    "project_id",
+    "operation",
+    "submitted_at",
+    "result_branch",
+    "task",
+    "archive"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 2
+    },
+    "task_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"
+    },
+    "gateway_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"
+    },
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9_-]{0,79}$"
+    },
+    "operation": {
+      "const": "apply_patch_pack"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "result_branch": {
+      "type": "string",
+      "pattern": "^agent/[^ ~^:?*\\[\\]\\\\]+$"
+    },
+    "archive": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "encoding",
+        "sha256",
+        "compressed_size_bytes",
+        "uncompressed_size_bytes",
+        "entry_count",
+        "content"
+      ],
+      "properties": {
+        "format": {
+          "const": "tar-gzip"
+        },
+        "encoding": {
+          "const": "base64"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "compressed_size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "uncompressed_size_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "entry_count": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10000
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "task": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "title",
+        "summary",
+        "objectives",
+        "constraints",
+        "acceptance_criteria"
+      ],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 160
+        },
+        "summary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "objectives": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "constraints": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "acceptance_criteria": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        },
+        "references": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          }
+        }
+      }
+    }
+  }
+}

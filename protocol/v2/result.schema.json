@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-github-gateway/protocol/v2/result.schema.json",
+  "title": "GPT GitHub Gateway Atomic Task Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "task_id",
+    "gateway_id",
+    "project_id",
+    "bundle_sha256",
+    "state",
+    "result_branch",
+    "submitted_at",
+    "completed_at"
+  ],
+  "properties": {
+    "schema_version": { "const": 2 },
+    "task_id": { "type": "string" },
+    "gateway_id": { "type": "string" },
+    "project_id": { "type": "string" },
+    "bundle_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "state": { "type": "string" },
+    "result_branch": { "type": "string" },
+    "implementation_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "evidence_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "gates": { "type": "array" },
+    "deviations": { "type": "array" },
+    "summary": { "type": "string" },
+    "human_response": { "type": "string" },
+    "submitted_at": { "type": "string", "format": "date-time" },
+    "completed_at": { "type": "string", "format": "date-time" }
+  }
+}

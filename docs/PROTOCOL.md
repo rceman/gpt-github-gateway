@@ -68,3 +68,24 @@ The agent writes `agent-result.json` and `AGENT_RESPONSE.md` to the paths named 
 A successful result must include every manifest gate exactly once with `status: pass`, plus implementation and evidence commit SHAs.
 
 The Markdown response is intended for GPT review and must remain concise: summary, commands, repairs, deviations, commits, and final state.
+
+
+## Protocol v2 atomic submission
+
+New tasks use one file:
+
+```text
+inbox/<gateway_id>/<project_id>/<task_id>.taskbundle.json
+```
+
+The JSON contains routing metadata, a strictly validated structured task document, and one deterministic tar.gz patch pack encoded as base64 with exact SHA-256 and size metadata. The task document is materialized as `TASK_REQUEST.json`; Markdown is reserved for the canonical agent execution handoff. The gateway validates and materializes the entire bundle atomically before creating a worktree or contacting Airelay.
+
+The local gateway configuration controls execution with `task_execution_mode = auto | manual | disabled`. Remote task data cannot select the Airelay binary, session key, resume session, launch arguments, repository path, or local execution policy.
+
+Protocol-v2 results use one file:
+
+```text
+results/<gateway_id>/<project_id>/<task_id>.result.json
+```
+
+See `TASK_BUNDLE_V2.md` and `protocol/v2/*.schema.json`. Protocol v1 remains read-compatible for existing audit records.

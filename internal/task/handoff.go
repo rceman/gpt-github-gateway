@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -14,6 +15,16 @@ const (
 	AgentResponseFilename = "AGENT_RESPONSE.md"
 	maxAgentHandoffBytes  = 256 << 10
 )
+
+var replacementTokenPrefix = "RE" + "PLACE_"
+
+var unresolvedHandoffPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`\b` + replacementTokenPrefix + `[A-Z0-9_]*\b`),
+	regexp.MustCompile(`(?i)\b(?:TODO|TBD):\s*fill\b`),
+	regexp.MustCompile(`\{\{\s*(?:PLACEHOLDER|` + replacementTokenPrefix + `[A-Z0-9_]*)\s*\}\}`),
+	regexp.MustCompile(`\$\{\s*` + replacementTokenPrefix + `[A-Z0-9_]*\s*\}`),
+	regexp.MustCompile(`<(?:TASK_ID|PROJECT_ID|PATCH_ID|` + replacementTokenPrefix + `[A-Z0-9_]*)>`),
+}
 
 var requiredHandoffHeadings = []string{
 	"# AGENT_HANDOFF",
@@ -66,13 +77,10 @@ func LoadAgentHandoff(packRoot string, manifest Manifest) ([]byte, error) {
 	if err := validateHandoffHeadings(text); err != nil {
 		return nil, err
 	}
-	for _, marker := range []string{"REPLACE_", "TODO: fill", "TBD: fill"} {
-		if strings.Contains(text, marker) {
-			return nil, fmt.Errorf("%s contains unresolved placeholder %q", AgentHandoffFilename, marker)
+	for _, pattern := range unresolvedHandoffPatterns {
+		if match := pattern.FindString(text); match != "" {
+			return nil, fmt.Errorf("%s contains unresolved placeholder %q", AgentHandoffFilename, match)
 		}
-	}
-	if strings.ContainsAny(text, "<>") {
-		return nil, fmt.Errorf("%s contains angle-bracket placeholder syntax", AgentHandoffFilename)
 	}
 	for label, value := range map[string]string{
 		"patch_id":            manifest.PatchID,

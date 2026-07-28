@@ -73,7 +73,11 @@ func (a *App) Once(ctx context.Context) error {
 		a.setError(err)
 		return err
 	}
-	remoteTasks, err := a.Bus.Discover(a.Config.Gateway.ID)
+	remoteTasks, err := a.Bus.Discover(
+		a.Config.Gateway.ID,
+		a.Config.Gateway.MaxTaskFileBytes,
+		a.Config.Gateway.MaxTaskAggregateBytes,
+	)
 	if err != nil {
 		a.setError(err)
 		return err
@@ -88,7 +92,7 @@ func (a *App) Once(ctx context.Context) error {
 			a.setError(err)
 			return err
 		}
-		if skipLocalTask(localRoot) {
+		if skipLocalTask(localRoot, a.Config.Gateway.TaskExecutionMode) {
 			continue
 		}
 		outcome, err := a.Runner.Run(ctx, projectID, remote.Envelope.TaskID)
@@ -103,11 +107,11 @@ func (a *App) Once(ctx context.Context) error {
 				Message:       err.Error(),
 			}
 			_ = task.WriteStatus(localRoot, status)
-			_ = a.publishTask(ctx, projectID, remote.Envelope.TaskID, status, nil, nil)
+			_ = a.publishRemoteTask(ctx, remote, status, nil, nil)
 			a.setError(err)
 			continue
 		}
-		if err := a.publishTask(ctx, projectID, remote.Envelope.TaskID, outcome.Status, outcome.Result, outcome.Response); err != nil {
+		if err := a.publishRemoteTask(ctx, remote, outcome.Status, outcome.Result, outcome.Response); err != nil {
 			a.setError(err)
 			return err
 		}
@@ -130,9 +134,10 @@ func (a *App) PublishRegistry(ctx context.Context) error {
 		Capabilities: []string{
 			"gpt-review-planner-v1.2.0",
 			"apply-patch-pack",
+			"atomic-task-bundle-v2",
+			"automatic-airelay-dispatch",
 			"isolated-git-worktree",
 			"airelay-session",
-			"local-owner-approval",
 		},
 	}
 	if err := a.Bus.PublishGateway(ctx, a.Config.Gateway.ID, state); err != nil {
@@ -270,6 +275,13 @@ func (a *App) Doctor(ctx context.Context) []string {
 	return checks
 }
 
+func (a *App) publishRemoteTask(ctx context.Context, remote bus.RemoteTask, status task.Status, result *task.AgentResult, response []byte) error {
+	if remote.ProtocolVersion == 2 {
+		return a.Bus.PublishAtomicResult(ctx, remote, status, result, response)
+	}
+	return a.publishTask(ctx, remote.Envelope.ProjectID, remote.Envelope.TaskID, status, result, response)
+}
+
 func (a *App) publishTask(ctx context.Context, projectID, taskID string, status task.Status, result *task.AgentResult, response []byte) error {
 	files := map[string][]byte{}
 	statusData, err := json.MarshalIndent(status, "", "  ")
@@ -296,20 +308,23 @@ func (a *App) setError(err error) {
 	a.lastError = err.Error()
 }
 
-func skipLocalTask(root string) bool {
+func skipLocalTask(root, executionMode string) bool {
 	status, err := task.ReadStatus(root)
 	if err != nil {
 		return false
 	}
 	switch status.State {
-	case "succeeded", "failed", "needs_gpt_revision", "rejected", "rolled_back", "agent_timeout", "agent_unavailable":
+	case "succeeded", "failed", "needs_gpt_revision", "rejected", "rolled_back", "agent_timeout", "agent_unavailable", "execution_disabled", "superseded":
 		return true
 	case "waiting_for_approval":
+		if executionMode == config.ExecutionModeAuto {
+			return false
+		}
 		approval, err := task.ReadApproval(root, status.TaskID)
 		return err == nil && approval.Decision == "pending"
 	case "agent_running":
 		resultReady := regularFile(filepath.Join(root, "agent-result.json"))
-		responseReady := regularFile(filepath.Join(root, "agent-response.md"))
+		responseReady := regularFile(filepath.Join(root, task.AgentResponseFilename))
 		return !(resultReady && responseReady)
 	default:
 		return false

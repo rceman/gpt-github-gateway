@@ -1,0 +1,28 @@
+{
+  "schema_version": 1,
+  "task_id": "task_20260728_120000_atomic_example",
+  "gateway_id": "home_pc",
+  "project_id": "gpt-github-gateway",
+  "submitted_at": "2026-07-28T12:00:00Z",
+  "result_branch": "agent/task-20260728-120000-atomic-example",
+  "task": {
+    "title": "Apply atomic gateway patch",
+    "summary": "Apply the supplied executable patch pack and publish validated implementation and evidence commits.",
+    "objectives": [
+      "Apply the supplied implementation in an isolated worktree.",
+      "Run every gate declared by the patch manifest."
+    ],
+    "constraints": [
+      "Do not broaden the manifest file scope.",
+      "Do not merge, rebase, amend, squash, or force-push."
+    ],
+    "acceptance_criteria": [
+      "Every required gate passes.",
+      "Implementation and evidence commits are pushed separately."
+    ],
+    "references": [
+      "AGENT_HANDOFF.md",
+      "manifest.json"
+    ]
+  }
+}

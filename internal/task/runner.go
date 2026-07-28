@@ -78,7 +78,12 @@ func (r *Runner) Run(ctx context.Context, projectID, taskID string) (RunOutcome,
 	if err := r.Git.VerifyCommit(ctx, project.Path, manifest.Target.BaseRevision); err != nil {
 		return RunOutcome{}, fmt.Errorf("verify patch base: %w", err)
 	}
-	if envelope.ApprovalRequired {
+	switch r.Config.Gateway.TaskExecutionMode {
+	case config.ExecutionModeDisabled:
+		status := r.status(envelope, "execution_disabled", "local task execution is disabled", "")
+		_ = WriteStatus(taskRoot, status)
+		return RunOutcome{Envelope: envelope, Manifest: manifest, Status: status}, nil
+	case config.ExecutionModeManual:
 		approval, err := ReadApproval(taskRoot, taskID)
 		if err != nil {
 			return RunOutcome{}, err
@@ -89,10 +94,14 @@ func (r *Runner) Run(ctx context.Context, projectID, taskID string) (RunOutcome,
 			return RunOutcome{Envelope: envelope, Manifest: manifest, Status: status}, nil
 		}
 		if approval.Decision != "approved" {
-			status := r.status(envelope, "waiting_for_approval", "local owner approval is required", "")
+			status := r.status(envelope, "waiting_for_approval", "local execution mode requires owner approval", "")
 			_ = WriteStatus(taskRoot, status)
 			return RunOutcome{Envelope: envelope, Manifest: manifest, Status: status}, nil
 		}
+	case config.ExecutionModeAuto:
+		// Trusted private-bus tasks dispatch immediately after validation.
+	default:
+		return RunOutcome{}, fmt.Errorf("unsupported task execution mode %q", r.Config.Gateway.TaskExecutionMode)
 	}
 
 	worktree := r.Layout.WorktreeRoot(projectID, taskID)

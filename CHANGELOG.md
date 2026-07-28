@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0 - 2026-07-28
+
+- Add atomic protocol-v2 task bundles for one-file Git bus submission.
+- Default trusted local gateways to automatic Airelay dispatch with optional manual or disabled modes.
+- Add deterministic JSON task-bundle builder and transport validator utilities.
+- Harden archive extraction against traversal, links, special files, duplicates, and case-fold collisions.
+- Permit normal angle brackets and shell redirection in `AGENT_HANDOFF.md` while rejecting explicit placeholders.
+- Resume stale approval-waiting tasks automatically when the local gateway runs in auto mode.
+
 ## 0.1.1 - 2026-07-28
 
 - Require canonical `AGENT_HANDOFF.md` for every executable patch pack.

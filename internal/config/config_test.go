@@ -29,6 +29,30 @@ func TestApplyDefaultsUsesProjectMasterSession(t *testing.T) {
 	if project.AirelayProfile != "codex" {
 		t.Fatalf("unexpected profile %q", project.AirelayProfile)
 	}
+	if cfg.Gateway.TaskExecutionMode != ExecutionModeAuto {
+		t.Fatalf("unexpected execution mode %q", cfg.Gateway.TaskExecutionMode)
+	}
+}
+
+func TestRejectsUnknownTaskExecutionMode(t *testing.T) {
+	cfg := Config{
+		SchemaVersion: 1,
+		Gateway: GatewayConfig{
+			ID:                    "home_pc",
+			PollIntervalSeconds:   10,
+			AgentTimeoutSeconds:   60,
+			TaskExecutionMode:     "remote",
+			MaxTaskFileBytes:      1024,
+			MaxTaskAggregateBytes: 2048,
+		},
+		Bus:      BusConfig{Repository: "rceman/typer", URL: "git@github.com:rceman/typer.git", Branch: "ai-workspace-bus"},
+		Server:   ServerConfig{Listen: DefaultListen},
+		Airelay:  AirelayConfig{Binary: "airelay"},
+		Projects: map[string]ProjectConfig{},
+	}
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("expected invalid task execution mode to fail")
+	}
 }
 
 func TestServerMustBindLoopback(t *testing.T) {

@@ -4,7 +4,8 @@
     "id": "home_pc",
     "poll_interval_seconds": 10,
     "agent_timeout_seconds": 7200,
-    "allow_patch_repair": true
+    "allow_patch_repair": true,
+    "task_execution_mode": "auto"
   },
   "bus": {
     "repository": "rceman/typer",

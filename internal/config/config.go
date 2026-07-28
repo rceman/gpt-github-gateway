@@ -18,6 +18,9 @@ const (
 	DefaultTimeoutSeconds = 7200
 	DefaultListen         = "127.0.0.1:8787"
 	DefaultAirelayBinary  = "airelay"
+	ExecutionModeAuto     = "auto"
+	ExecutionModeManual   = "manual"
+	ExecutionModeDisabled = "disabled"
 )
 
 var slugPattern = regexp.MustCompile(`^[a-z0-9][a-z0-9_-]{0,79}$`)
@@ -36,6 +39,7 @@ type GatewayConfig struct {
 	PollIntervalSeconds   int    `json:"poll_interval_seconds"`
 	AgentTimeoutSeconds   int    `json:"agent_timeout_seconds"`
 	AllowPatchRepair      bool   `json:"allow_patch_repair"`
+	TaskExecutionMode     string `json:"task_execution_mode,omitempty"`
 	MaxTaskFileBytes      int64  `json:"max_task_file_bytes,omitempty"`
 	MaxTaskAggregateBytes int64  `json:"max_task_aggregate_bytes,omitempty"`
 }
@@ -136,6 +140,9 @@ func (c *Config) ApplyDefaults() {
 	if c.Gateway.AgentTimeoutSeconds == 0 {
 		c.Gateway.AgentTimeoutSeconds = DefaultTimeoutSeconds
 	}
+	if strings.TrimSpace(c.Gateway.TaskExecutionMode) == "" {
+		c.Gateway.TaskExecutionMode = ExecutionModeAuto
+	}
 	if c.Gateway.MaxTaskFileBytes == 0 {
 		c.Gateway.MaxTaskFileBytes = 20 << 20
 	}
@@ -177,6 +184,11 @@ func (c *Config) Validate() error {
 	}
 	if c.Gateway.AgentTimeoutSeconds < 30 || c.Gateway.AgentTimeoutSeconds > 86400 {
 		return errors.New("gateway.agent_timeout_seconds must be between 30 and 86400")
+	}
+	switch c.Gateway.TaskExecutionMode {
+	case ExecutionModeAuto, ExecutionModeManual, ExecutionModeDisabled:
+	default:
+		return errors.New("gateway.task_execution_mode must be auto, manual, or disabled")
 	}
 	if c.Gateway.MaxTaskFileBytes < 1024 || c.Gateway.MaxTaskAggregateBytes < c.Gateway.MaxTaskFileBytes {
 		return errors.New("invalid task size limits")

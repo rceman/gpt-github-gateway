@@ -15,6 +15,7 @@ import (
 	"github.com/rceman/gpt-github-gateway/internal/config"
 	"github.com/rceman/gpt-github-gateway/internal/execx"
 	"github.com/rceman/gpt-github-gateway/internal/task"
+	"github.com/rceman/gpt-github-gateway/internal/taskbundle"
 )
 
 type Bus struct {
@@ -24,8 +25,10 @@ type Bus struct {
 }
 
 type RemoteTask struct {
-	Envelope task.Envelope
-	Root     string
+	Envelope        task.Envelope
+	Root            string
+	ProtocolVersion int
+	Bundle          *taskbundle.Bundle
 }
 
 func New(cfg config.BusConfig, root string) *Bus {
@@ -89,28 +92,84 @@ func (b *Bus) Sync(ctx context.Context) error {
 	return err
 }
 
-func (b *Bus) Discover(gatewayID string) ([]RemoteTask, error) {
-	pattern := filepath.Join(b.Root, "tasks", gatewayID, "*", "*", "task.json")
-	paths, err := filepath.Glob(pattern)
+func (b *Bus) Discover(gatewayID string, maxFile, maxAggregate int64) ([]RemoteTask, error) {
+	result := []RemoteTask{}
+	legacyPattern := filepath.Join(b.Root, "tasks", gatewayID, "*", "*", "task.json")
+	legacyPaths, err := filepath.Glob(legacyPattern)
 	if err != nil {
 		return nil, err
 	}
-	sort.Strings(paths)
-	result := make([]RemoteTask, 0, len(paths))
-	for _, path := range paths {
-		envelope, err := task.LoadEnvelope(path)
+	for _, filename := range legacyPaths {
+		envelope, err := task.LoadEnvelope(filename)
 		if err != nil {
-			return nil, fmt.Errorf("load remote task %s: %w", path, err)
+			return nil, fmt.Errorf("load remote task %s: %w", filename, err)
 		}
 		if envelope.GatewayID != gatewayID {
 			continue
 		}
-		result = append(result, RemoteTask{Envelope: envelope, Root: filepath.Dir(path)})
+		result = append(result, RemoteTask{
+			Envelope:        envelope,
+			Root:            filepath.Dir(filename),
+			ProtocolVersion: 1,
+		})
+	}
+
+	bundlePattern := filepath.Join(b.Root, "inbox", gatewayID, "*", "*.taskbundle.json")
+	bundlePaths, err := filepath.Glob(bundlePattern)
+	if err != nil {
+		return nil, err
+	}
+	for _, filename := range bundlePaths {
+		bundle, err := taskbundle.Load(filename, maxAggregate)
+		if err != nil {
+			return nil, fmt.Errorf("load atomic task bundle %s: %w", filename, err)
+		}
+		if bundle.GatewayID != gatewayID {
+			continue
+		}
+		projectDirectory := filepath.Base(filepath.Dir(filename))
+		expectedFilename := bundle.TaskID + ".taskbundle.json"
+		if projectDirectory != bundle.ProjectID || filepath.Base(filename) != expectedFilename {
+			return nil, fmt.Errorf("atomic task bundle path does not match its routing identity: %s", filename)
+		}
+		result = append(result, RemoteTask{
+			Envelope:        bundle.Envelope(),
+			Root:            filename,
+			ProtocolVersion: taskbundle.SchemaVersion,
+			Bundle:          bundle,
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Envelope.ProjectID != result[j].Envelope.ProjectID {
+			return result[i].Envelope.ProjectID < result[j].Envelope.ProjectID
+		}
+		if result[i].Envelope.TaskID != result[j].Envelope.TaskID {
+			return result[i].Envelope.TaskID < result[j].Envelope.TaskID
+		}
+		return result[i].ProtocolVersion < result[j].ProtocolVersion
+	})
+	for index := 1; index < len(result); index++ {
+		previous := result[index-1].Envelope
+		current := result[index].Envelope
+		if previous.ProjectID == current.ProjectID && previous.TaskID == current.TaskID {
+			return nil, fmt.Errorf("duplicate remote task identity %s/%s", current.ProjectID, current.TaskID)
+		}
 	}
 	return result, nil
 }
 
 func (b *Bus) Materialize(remote RemoteTask, localRoot string, maxFile, maxAggregate int64) error {
+	if remote.ProtocolVersion == taskbundle.SchemaVersion {
+		if remote.Bundle == nil {
+			return fmt.Errorf("atomic task bundle metadata is missing")
+		}
+		return remote.Bundle.Materialize(localRoot, maxFile, maxAggregate)
+	}
+	return materializeDirectory(remote.Root, localRoot, maxFile, maxAggregate)
+}
+
+func materializeDirectory(remoteRoot, localRoot string, maxFile, maxAggregate int64) error {
 	if _, err := os.Stat(localRoot); err == nil {
 		return nil
 	}
@@ -119,11 +178,11 @@ func (b *Bus) Materialize(remote RemoteTask, localRoot string, maxFile, maxAggre
 		return err
 	}
 	var total int64
-	err := filepath.WalkDir(remote.Root, func(path string, entry fs.DirEntry, walkErr error) error {
+	err := filepath.WalkDir(remoteRoot, func(path string, entry fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
-		relative, err := filepath.Rel(remote.Root, path)
+		relative, err := filepath.Rel(remoteRoot, path)
 		if err != nil {
 			return err
 		}
@@ -192,6 +251,36 @@ func (b *Bus) PublishTask(ctx context.Context, gatewayID, projectID, taskID stri
 	return b.commitAndPush(ctx, paths, "gateway: report "+gatewayID+"/"+projectID+"/"+taskID)
 }
 
+func (b *Bus) PublishAtomicResult(ctx context.Context, remote RemoteTask, status task.Status, result *task.AgentResult, response []byte) error {
+	if remote.ProtocolVersion != taskbundle.SchemaVersion || remote.Bundle == nil {
+		return fmt.Errorf("remote task is not an atomic task bundle")
+	}
+	payload := AtomicTaskResult{
+		SchemaVersion: 2,
+		TaskID:        remote.Envelope.TaskID,
+		GatewayID:     remote.Envelope.GatewayID,
+		ProjectID:     remote.Envelope.ProjectID,
+		BundleSHA256:  remote.Bundle.Archive.SHA256,
+		State:         status.State,
+		ResultBranch:  remote.Envelope.ResultBranch,
+		Summary:       status.Message,
+		HumanResponse: string(response),
+		SubmittedAt:   remote.Envelope.SubmittedAt,
+		CompletedAt:   status.UpdatedAt,
+	}
+	if result != nil {
+		payload.ImplementationCommit = result.ImplementationCommit
+		payload.EvidenceCommit = result.EvidenceCommit
+		payload.Gates = result.Gates
+		payload.Deviations = result.Deviations
+		if result.Summary != "" {
+			payload.Summary = result.Summary
+		}
+	}
+	path := filepath.Join("results", remote.Envelope.GatewayID, remote.Envelope.ProjectID, remote.Envelope.TaskID+".result.json")
+	return b.publishJSON(ctx, path, payload, "gateway: result "+remote.Envelope.GatewayID+"/"+remote.Envelope.ProjectID+"/"+remote.Envelope.TaskID)
+}
+
 func (b *Bus) publishJSON(ctx context.Context, relative string, payload any, message string) error {
 	data, err := json.MarshalIndent(payload, "", "  ")
 	if err != nil {
@@ -255,6 +344,24 @@ func copyFile(source, destination string, limit int64) error {
 		return fmt.Errorf("file exceeds size limit")
 	}
 	return nil
+}
+
+type AtomicTaskResult struct {
+	SchemaVersion        int                   `json:"schema_version"`
+	TaskID               string                `json:"task_id"`
+	GatewayID            string                `json:"gateway_id"`
+	ProjectID            string                `json:"project_id"`
+	BundleSHA256         string                `json:"bundle_sha256"`
+	State                string                `json:"state"`
+	ResultBranch         string                `json:"result_branch"`
+	ImplementationCommit string                `json:"implementation_commit,omitempty"`
+	EvidenceCommit       string                `json:"evidence_commit,omitempty"`
+	Gates                []task.AgentGate      `json:"gates,omitempty"`
+	Deviations           []task.AgentDeviation `json:"deviations,omitempty"`
+	Summary              string                `json:"summary,omitempty"`
+	HumanResponse        string                `json:"human_response,omitempty"`
+	SubmittedAt          string                `json:"submitted_at"`
+	CompletedAt          time.Time             `json:"completed_at"`
 }
 
 type GatewayState struct {
