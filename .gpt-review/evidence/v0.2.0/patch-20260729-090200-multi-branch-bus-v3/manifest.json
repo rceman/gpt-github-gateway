@@ -1,0 +1,254 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260729-090200-multi-branch-bus-v3",
+  "title": "Multi-branch gateway bus v3",
+  "description": "Adds immutable bootstrap main, rolling gateway control branches, append-only project branches, per-project workers, and guarded rceman/typer migration.",
+  "created_at": "2026-07-29T09:02:00Z",
+  "patch_timestamp": "20260729-090200",
+  "patch_slug": "multi-branch-bus-v3",
+  "baseline_release": "v0.2.0",
+  "evidence_directory": ".gpt-review/evidence/v0.2.0/patch-20260729-090200-multi-branch-bus-v3",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-github-gateway",
+    "branch": "main",
+    "base_revision": "89e9a2a90eb0475403084c76dac5ccefb2632376"
+  },
+  "files_created": [
+    "docs/MULTI_BRANCH_BUS.md",
+    "internal/bus/bus_test.go",
+    "protocol/v3/bootstrap.schema.json",
+    "protocol/v3/checkpoint.schema.json",
+    "protocol/v3/gateway.schema.json",
+    "protocol/v3/project.schema.json",
+    "scripts/migrate-bus-multibranch.py",
+    "scripts/tests/test_migrate_bus.py"
+  ],
+  "files_modified": [
+    "CHANGELOG.md",
+    "README.md",
+    "VERSION",
+    "cmd/gpt-github-gateway/main.go",
+    "docs/ARCHITECTURE.md",
+    "docs/PROTOCOL.md",
+    "docs/SECURITY.md",
+    "docs/TASK_BUNDLE_V2.md",
+    "examples/config.json",
+    "internal/app/app.go",
+    "internal/bus/bus.go",
+    "internal/config/config.go",
+    "internal/config/config_test.go",
+    "internal/supervisor/supervisor.go",
+    "scripts/bootstrap-local.sh",
+    "scripts/tests/test_task_bundle.py"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Use immutable bootstrap main and branch-per-gateway/project",
+      "acceptance": [
+        "AC-001: main is locally pinned and receives no runtime commits.",
+        "AC-002: control and project branch patterns derive from gateway and project identity.",
+        "AC-003: unsupported or changed bootstrap templates fail readiness."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Publish one-file rolling gateway control snapshots",
+      "acceptance": [
+        "AC-004: gateway/<gateway_id> contains only gateway.json.",
+        "AC-005: snapshots have main as parent and use exact force-with-lease.",
+        "AC-006: startup, heartbeat, status changes, and shutdown publish bounded liveness data without secrets."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "summary": "Bootstrap isolated append-only project branches",
+      "acceptance": [
+        "AC-007: every project branch has project identity, context, checkpoint, inbox, results, and archive.",
+        "AC-008: divergent project identity fails instead of being overwritten.",
+        "AC-009: project branches never force-push."
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "summary": "Isolate task routing and per-project queues",
+      "acceptance": [
+        "AC-010: tasks use branch-local inbox/<task_id>.taskbundle.json paths.",
+        "AC-011: config, branch, project.json, envelope, and manifest identity must agree.",
+        "AC-012: one project worker is serial while separate projects may execute concurrently."
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "summary": "Publish final result and checkpoint atomically",
+      "acceptance": [
+        "AC-013: result and checkpoint are one append-only project commit.",
+        "AC-014: non-fast-forward conflicts are retried from current remote HEAD.",
+        "AC-015: completed tasks are not redispatched."
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "summary": "Use schema-v2 owner-controlled configuration",
+      "acceptance": [
+        "AC-016: legacy bus.branch configs fail with deterministic migration guidance.",
+        "AC-017: branch patterns are strictly validated and only approved variables expand.",
+        "AC-018: resume IDs, paths, launch arguments, and execution policy remain local-only."
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "summary": "Provide guarded destructive migration",
+      "acceptance": [
+        "AC-019: migration defaults to dry-run and requires exact repository confirmation.",
+        "AC-020: all refs, config, binary, and local bus state are backed up before mutation.",
+        "AC-021: legacy refs are deleted only after new main, control, projects, readiness, and branch trees verify."
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "summary": "Register the three initial home_pc projects",
+      "acceptance": [
+        "AC-022: gpt-github-gateway, gpt-review-planner, and airelay project branches are created.",
+        "AC-023: airelay uses therceman/airelay with default branch master.",
+        "AC-024: missing Airelay session binding is reported as configuration_required rather than claimed ready."
+      ]
+    },
+    {
+      "id": "REQ-009",
+      "summary": "Preserve protocol-v2 and security boundaries",
+      "acceptance": [
+        "AC-025: task bundle and result payloads remain protocol-v2 compatible.",
+        "AC-026: no third-party Go or Python dependency is introduced.",
+        "AC-027: gateway.json excludes local paths, resume IDs, launch arguments, credentials, and private logs."
+      ]
+    },
+    {
+      "id": "REQ-010",
+      "summary": "Advance gateway release and operator documentation",
+      "acceptance": [
+        "AC-028: VERSION and CLI report 0.3.0.",
+        "AC-029: docs and examples describe only the multi-branch contract.",
+        "AC-030: startup detects a process that exits immediately instead of reporting success."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "name": "Go formatting",
+      "kind": "command",
+      "command": "go fmt ./..."
+    },
+    {
+      "id": "go-vet",
+      "name": "Go static analysis",
+      "kind": "command",
+      "command": "go vet ./..."
+    },
+    {
+      "id": "go-test",
+      "name": "Go tests",
+      "kind": "command",
+      "command": "go test ./..."
+    },
+    {
+      "id": "go-build",
+      "name": "Go build",
+      "kind": "command",
+      "command": "go build ./..."
+    },
+    {
+      "id": "python-test",
+      "name": "Python tests",
+      "kind": "command",
+      "command": "python3 -m unittest discover -s scripts/tests -v"
+    },
+    {
+      "id": "python-compile",
+      "name": "Python syntax",
+      "kind": "command",
+      "command": "python3 -m compileall -q scripts"
+    },
+    {
+      "id": "shell-syntax",
+      "name": "Shell syntax",
+      "kind": "command",
+      "command": "bash -n scripts/install.sh scripts/bootstrap-local.sh"
+    },
+    {
+      "id": "migration-dry-run",
+      "name": "Real bus migration dry-run",
+      "kind": "command",
+      "command": "python3 scripts/migrate-bus-multibranch.py --config $HOME/.config/gpt-github-gateway/config.json --dry-run"
+    },
+    {
+      "id": "disposable-migration",
+      "name": "Disposable complete migration",
+      "kind": "command",
+      "command": "Run the documented complete migration against a disposable local bare bus fixture and verify the final branch allowlist."
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    },
+    {
+      "id": "source-commits",
+      "name": "Separate implementation and evidence commits",
+      "kind": "evidence"
+    },
+    {
+      "id": "typer-migration",
+      "name": "Backed-up rceman/typer migration",
+      "kind": "command",
+      "command": "Execute scripts/migrate-bus-multibranch.py only after all source gates and feature-branch push pass."
+    },
+    {
+      "id": "gateway-runtime",
+      "name": "Installed gateway runtime",
+      "kind": "command",
+      "command": "Verify version 0.3.0, running status, doctor, readiness, control lease, and all three project branches."
+    },
+    {
+      "id": "agent-evidence",
+      "name": "Committed agent evidence",
+      "kind": "evidence"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Reconstructed the exact 0.2.0 source from previously validated patch packs and included the agent fixture repair present in main.",
+    "Authored complete schema-v2 configuration, multi-branch bus manager, per-project workers, control snapshots, project bootstrap, migration utility, tests, schemas, and documentation.",
+    "Ran Go formatting, vet, tests, and build in a disposable Go 1.23 compatibility copy; these are advisory sandbox checks, not the required host Go 1.24 gates.",
+    "Ran Python unit tests, compileall, shell syntax, JSON parsing, Git whitespace, branch bootstrap, rolling snapshot, independent gateway, and immutable-template regression checks.",
+    "Built a full-file overlay and verified that it contains only the declared created and modified paths."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "Host Go 1.24 acceptance gates in the owner environment.",
+    "Real rceman/typer destructive migration.",
+    "Real Git bundle backup and legacy ref deletion.",
+    "Installation and execution of gateway 0.3.0 on home_pc.",
+    "Live heartbeat, readiness, Airelay sessions, and project branch verification.",
+    "Real protocol-v2 task dispatch after migration."
+  ],
+  "known_integration_risks": [
+    "The real migration force-updates rceman/typer main and deletes legacy refs; it is permitted only after verified backup and every implementation gate passes.",
+    "The current planner pin remains v1.2.0 until the separate planner release is integrated; AGENT_PROMPT.md is included only for validator compatibility.",
+    "Airelay may be registered as configuration_required if no verified airelay_master resume binding exists.",
+    "The agent must use the host Go 1.24 toolchain declared by go.mod."
+  ],
+  "forbidden_deviations": [
+    "Do not migrate rceman/typer before source gates, commits, evidence, and feature-branch push pass.",
+    "Do not put runtime state in main or more than gateway.json in a control branch.",
+    "Do not force-push project branches or use blind force for control/main updates.",
+    "Do not modify gpt-review-planner or therceman/airelay source in this task.",
+    "Do not invent Airelay resume IDs, weaken archive validation, add YAML transport, or add third-party dependencies."
+  ]
+}

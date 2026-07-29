@@ -1,0 +1,350 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "54941362aef2f88789edce6637e9d7592b3b04be",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 142,
+          "end_line": 205,
+          "sha256": "672ba35cb7e1bec7384f7577b87c8a381f7c74836dd4d0e8db00494c5a631889",
+          "symbol": "func (m *Manager) Ensure"
+        },
+        {
+          "kind": "test",
+          "path": "internal/bus/bus_test.go",
+          "start_line": 61,
+          "end_line": 124,
+          "sha256": "a869b2f108d4bbccf59a1004523c7721e3d86c3ba519d71f9258c38afb84061e",
+          "symbol": "func TestTemplateCommitPinRejectsChangedMain"
+        }
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 398,
+          "end_line": 461,
+          "sha256": "581fadd25a700f77d45ceabe985f076b224d35e8fcb7d419cbcf3a503d6fb4b9",
+          "symbol": "func (m *Manager) PublishControl"
+        },
+        {
+          "kind": "test",
+          "path": "internal/bus/bus_test.go",
+          "start_line": 13,
+          "end_line": 76,
+          "sha256": "49c5371cbb9e8134fb571dfc436b265d91974ab0590378be6681e5310ef7f1d4",
+          "symbol": "func TestMultiBranchBootstrapAndRollingControl"
+        }
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 324,
+          "end_line": 387,
+          "sha256": "244f654fc2e1fc68adbc59d23f58e9ba2e09c6d8dd88948d26520329f65c3239",
+          "symbol": "func (p *ProjectBus) bootstrapLocked"
+        },
+        {
+          "kind": "test",
+          "path": "internal/bus/bus_test.go",
+          "start_line": 13,
+          "end_line": 76,
+          "sha256": "49c5371cbb9e8134fb571dfc436b265d91974ab0590378be6681e5310ef7f1d4",
+          "symbol": "func TestMultiBranchBootstrapAndRollingControl"
+        }
+      ]
+    },
+    {
+      "id": "REQ-004",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/app/app.go",
+          "start_line": 136,
+          "end_line": 199,
+          "sha256": "5bb96e8217e3d027c0bd8d958f8ae7a9ac23d0c87b29eee3619dfe324aca9b7d",
+          "symbol": "func (a *App) Run"
+        },
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 482,
+          "end_line": 545,
+          "sha256": "7798885f4b3d52c6e264099e14a4f839b58fdbd73ec4875a285cfee21d254cbb",
+          "symbol": "func (p *ProjectBus) Discover"
+        }
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 517,
+          "end_line": 580,
+          "sha256": "a7c6a9cf09c41df74eee3f211824a987124afeec64235365fadb624673e4de38",
+          "symbol": "func (p *ProjectBus) PublishAtomicResult"
+        },
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 541,
+          "end_line": 604,
+          "sha256": "095a4e7aaca14287e432cace17eda50b5fbf255111cc1d475572172f1ca0e1c1",
+          "symbol": "func (p *ProjectBus) publishResultAttempt"
+        }
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/config/config.go",
+          "start_line": 227,
+          "end_line": 290,
+          "sha256": "b805c96fdd859884ff8aad9e7c9a274fbfe6e9dd6bb3a2a8b131496509ae879e",
+          "symbol": "func (c *Config) Validate"
+        },
+        {
+          "kind": "test",
+          "path": "internal/config/config_test.go",
+          "start_line": 81,
+          "end_line": 104,
+          "sha256": "1d4e0ee738315480fa7900a19c24be955cdcfe39fbfaef73002c4d896e3d7d07",
+          "symbol": "func TestLegacyConfigGetsMigrationGuidance"
+        }
+      ]
+    },
+    {
+      "id": "REQ-007",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/migrate-bus-multibranch.py",
+          "start_line": 255,
+          "end_line": 318,
+          "sha256": "71abc7221c8c57c683bb09deb8c225720f0030925f100c9fef0e33f988582477",
+          "symbol": "def execute"
+        },
+        {
+          "kind": "test",
+          "path": "scripts/tests/test_migrate_bus.py",
+          "start_line": 142,
+          "end_line": 193,
+          "sha256": "0830c2010c6dca6bd2fbf9a73706c3a90486237d5c77e430eca1ba9995b80957",
+          "symbol": "def test_dry_run_does_not_mutate_remote"
+        }
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "scripts/migrate-bus-multibranch.py",
+          "start_line": 22,
+          "end_line": 85,
+          "sha256": "093cff1f5ecdc11dcaf625a0533af550e492da12c2551dfa44f72f295b058541",
+          "symbol": "REQUIRED_PROJECTS"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/MULTI_BRANCH_BUS.md",
+          "start_line": 21,
+          "end_line": 75,
+          "sha256": "1dace994768ae15ad05dc88224534f9e80a01c01f469e03f5774a7ed27ae3baa",
+          "symbol": "## Project branches"
+        }
+      ]
+    },
+    {
+      "id": "REQ-009",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "internal/bus/bus.go",
+          "start_line": 105,
+          "end_line": 168,
+          "sha256": "fb092bcf34d2c96acdc8c5abd20219b832f772f923a6cf6bb51d95edf1c0d466",
+          "symbol": "type GatewayState struct"
+        },
+        {
+          "kind": "documentation",
+          "path": "docs/SECURITY.md",
+          "start_line": 25,
+          "end_line": 30,
+          "sha256": "e98a1c8485f74e87ffd96583ecb94453a766f49ca748a12fc84e3cc1ba6e3b79",
+          "symbol": "## Published metadata"
+        }
+      ]
+    },
+    {
+      "id": "REQ-010",
+      "status": "pass",
+      "proofs": [
+        {
+          "kind": "source",
+          "path": "VERSION",
+          "start_line": 1,
+          "end_line": 1,
+          "sha256": "d915cc95d6ca8f47ae297713ed46d4e5c5d99ddd29fc3c61e263bdf305f2b5b0",
+          "symbol": "0.3.0"
+        },
+        {
+          "kind": "source",
+          "path": "internal/supervisor/supervisor.go",
+          "start_line": 12,
+          "end_line": 75,
+          "sha256": "20564fd0b472fba4630481d7112250ae6f8468df498bd1523ddda8fec129a768",
+          "symbol": "func Start"
+        }
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go fmt ./... passed."
+    },
+    {
+      "id": "go-vet",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go vet ./... passed."
+    },
+    {
+      "id": "go-test",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go test ./... passed."
+    },
+    {
+      "id": "go-build",
+      "status": "pass",
+      "exit": 0,
+      "summary": "go build ./... passed."
+    },
+    {
+      "id": "python-test",
+      "status": "pass",
+      "exit": 0,
+      "summary": "python3 -m unittest discover -s scripts/tests -v passed: 18 tests, including canonical task scanning, disposable ref deletion, source preflight, and installed-version checks."
+    },
+    {
+      "id": "python-compile",
+      "status": "pass",
+      "exit": 0,
+      "summary": "python3 -m compileall -q scripts passed."
+    },
+    {
+      "id": "shell-syntax",
+      "status": "pass",
+      "exit": 0,
+      "summary": "bash -n scripts/install.sh scripts/bootstrap-local.sh passed."
+    },
+    {
+      "id": "migration-dry-run",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Migration dry-run passed against current schema-v2 state without mutation."
+    },
+    {
+      "id": "disposable-migration",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Disposable migration/ref-deletion tests passed; backup mirror and bundle remained unchanged."
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Exact original patch scope verification passed for correction files."
+    },
+    {
+      "id": "source-commits",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Accepted implementation and branch-validation repair preserved; correction commit created and feature branch ready to push."
+    },
+    {
+      "id": "typer-migration",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Previously completed real migration verified without rerunning or modifying rceman/typer; final branch allowlist and trees remain correct."
+    },
+    {
+      "id": "gateway-runtime",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Previously completed gateway runtime verified: 0.3.0, status running, doctor passed, readiness ready."
+    },
+    {
+      "id": "agent-evidence",
+      "status": "pass",
+      "exit": 0,
+      "summary": "Evidence refreshed; committed verification follows."
+    }
+  ],
+  "deviations": [
+    {
+      "kind": "scope-integration",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "The original overlay manifest expected scripts/tests/test_task_bundle.py to change although it was byte-identical to base; retained the earlier non-behavioral in-scope comment."
+    },
+    {
+      "kind": "branch-validation-repair",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "The accepted b323aba repair fixed hyphenated project branch validation."
+    },
+    {
+      "kind": "migration-task-scan",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "The earlier migration required moving archived stale task copies outside the local scan root; this correction makes scanning canonical and ignores archived, bus-worktree, and unrelated nested status files."
+    },
+    {
+      "kind": "migration-deployment-order",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "The earlier migration used 0.2.0 before config replacement; this correction preflights source/version and verifies installed 0.3.0 before remote/config mutation."
+    },
+    {
+      "kind": "migration-ref-delete",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "The earlier mirror deletion failure was manually completed; this correction deletes exact refs through the normal remote URL while preserving the backup mirror."
+    },
+    {
+      "kind": "evidence-tooling",
+      "behavior_changed": false,
+      "scope_changed": false,
+      "summary": "Pinned evidence prepare has the known staged-evidence scope conflict; committed verification is required and used."
+    }
+  ]
+}
