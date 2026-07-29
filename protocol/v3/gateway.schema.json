@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "gateway_id", "gateway_version", "template_branch", "template_commit", "status", "execution_mode", "started_at", "heartbeat_at", "lease_expires_at", "capabilities", "projects", "runtime", "last_error"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "gateway_id": {"type": "string"},
+    "gateway_version": {"type": "string"},
+    "template_branch": {"const": "main"},
+    "template_commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "status": {"enum": ["online", "offline", "degraded"]},
+    "execution_mode": {"enum": ["auto", "manual", "disabled"]},
+    "started_at": {"type": "string", "format": "date-time"},
+    "heartbeat_at": {"type": "string", "format": "date-time"},
+    "lease_expires_at": {"type": "string", "format": "date-time"},
+    "capabilities": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "projects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["project_id", "repository", "default_branch", "branch", "session_key", "status", "active_task_id"],
+        "properties": {
+          "project_id": {"type": "string"},
+          "repository": {"type": "string"},
+          "default_branch": {"type": "string"},
+          "branch": {"type": "string"},
+          "session_key": {"type": "string"},
+          "status": {"enum": ["ready", "degraded", "configuration_required"]},
+          "active_task_id": {"type": ["string", "null"]}
+        }
+      }
+    },
+    "runtime": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pid", "readiness", "doctor"],
+      "properties": {
+        "pid": {"type": "integer", "minimum": 1},
+        "readiness": {"enum": ["ready", "not_ready"]},
+        "doctor": {"enum": ["passed", "failed"]}
+      }
+    },
+    "last_error": {"type": ["string", "null"]}
+  }
+}

@@ -24,6 +24,7 @@ validator = load_module("validate_task_bundle", "scripts/validate-task-bundle.py
 
 
 class TaskBundleTests(unittest.TestCase):
+    # Protocol-v2 bundle coverage remains part of the multi-branch transport gate.
     def pack(self, root: Path) -> Path:
         pack = root / "pack"
         (pack / "patch").mkdir(parents=True)

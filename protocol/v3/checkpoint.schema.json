@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "gateway_id", "project_id", "source_repository", "source_default_branch", "source_head", "latest_completed_task_id", "latest_result_commit", "active_task_id", "next_action", "updated_at"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "gateway_id": {"type": "string"},
+    "project_id": {"type": "string"},
+    "source_repository": {"type": "string"},
+    "source_default_branch": {"type": "string"},
+    "source_head": {"type": "string"},
+    "latest_completed_task_id": {"type": ["string", "null"]},
+    "latest_result_commit": {"type": ["string", "null"]},
+    "active_task_id": {"type": ["string", "null"]},
+    "next_action": {"type": "string"},
+    "updated_at": {"type": "string", "format": "date-time"}
+  }
+}

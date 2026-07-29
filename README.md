@@ -1,47 +1,55 @@
 # gpt-github-gateway
 
-GitHub-backed local gateway for GPT-authored patch execution, validation, and agent-assisted repair.
-
-`gpt-github-gateway` is the transport and enforcement layer for projects developed with [`gpt-review-planner`](https://github.com/rceman/gpt-review-planner). GPT remains the principal architect, reviewer, test author, and implementation author. The gateway addresses work to a specific machine and project, safely applies the supplied patch pack in an isolated Git worktree, and sends a short file-based instruction to a long-lived Codex session through `airelay`.
+GitHub-backed local execution gateway for GPT-authored `gpt-review-planner` patch packs.
 
 ## Runtime model
 
 ```text
 GPT
-  │ builds one validated taskbundle.json
-  ▼
-rceman/typer
-  │ inbox/<gateway_id>/<project_id>/<task_id>.taskbundle.json
-  ▼
-gpt-github-gateway
-  │ safe extraction + isolated Git worktree + automatic dispatch
-  ▼
-airelay prompt <project_session_key> "Read <AGENT_HANDOFF.md>"
-  │
-  ▼
-Codex Luna Low
-  │ runtime gates + narrow integration fixes + evidence
-  ▼
-rceman/typer task response
-  ▼
-GPT delta review
+  → project/<gateway_id>/<project_id>/inbox/<task_id>.taskbundle.json
+  → gpt-github-gateway validates and materializes the bundle
+  → isolated source-repository worktree
+  → Airelay long-lived project session
+  → implementation and evidence commits
+  → project branch results/<task_id>.result.json + checkpoint
+  → GPT delta review
 ```
+
+## Bus branches
+
+```text
+rceman/typer:main
+    immutable bootstrap template
+
+rceman/typer:gateway/<gateway_id>
+    rolling one-file gateway.json snapshot
+
+rceman/typer:project/<gateway_id>/<project_id>
+    durable project-specific task and result history
+```
+
+For `home_pc` the initial project branches are:
+
+```text
+project/home_pc/gpt-github-gateway
+project/home_pc/gpt-review-planner
+project/home_pc/airelay
+```
+
+The control branch contains only `gateway.json`. Project branches contain `project.json`, `PROJECT_CONTEXT.md`, `state/checkpoint.json`, `inbox/`, `results/`, and `archive/`.
 
 ## Core properties
 
-- multiple gateway instances such as `home_pc` and `work_pc`;
-- projects are local to one gateway and are addressed by `gateway_id + project_id`;
-- project `session_key` defaults to `<project_id>_master`;
-- no remote task may choose an executable, shell command, Airelay profile, session key, resume ID, or sandbox policy;
-- every executable patch pack must contain a complete canonical `AGENT_HANDOFF.md`;
-- the gateway appends local runtime paths to that handoff and expects `AGENT_RESPONSE.md` plus `agent-result.json`;
-- task instructions and agent responses are files under `~/.gpt-github-gateway/<gateway_id>/<project_id>/tasks/<task_id>/`;
-- the user's existing project checkout is never switched, stashed, reset, or cleaned;
-- patch application occurs in a task-specific Git worktree and can be rolled back independently;
-- the pinned `gpt-review-planner` manifest, declared file scope, base revision, and evidence contract are mandatory;
-- protocol-v2 tasks are one deterministic base64 tar.gz bundle inside one JSON file and one Git commit;
-- local `task_execution_mode` defaults to `auto`; `manual` and `disabled` remain emergency policies;
-- JSON is the canonical task authoring and transport format; Markdown remains the final agent-readable `AGENT_HANDOFF.md`.
+- immutable locally pinned `main` template;
+- independent control branch per gateway machine;
+- independent append-only branch per gateway project;
+- one serial worker and one Airelay session per project;
+- separate projects may execute concurrently;
+- one-file protocol-v2 task submission and one final result commit;
+- strict identity validation across config, branch, `project.json`, task envelope, and patch manifest;
+- no remote task may select local paths, binaries, session IDs, execution mode, or launch arguments;
+- shared bare mirror with isolated project worktrees and cross-process Git operation locking;
+- control heartbeat snapshots use exact `force-with-lease`; project branches never force-push.
 
 ## Install
 
@@ -49,59 +57,67 @@ GPT delta review
 bash scripts/install.sh
 ```
 
-Or build and install directly:
-
-```bash
-go install github.com/rceman/gpt-github-gateway/cmd/gpt-github-gateway@latest
-```
-
-## Bootstrap
+## New configuration
 
 ```bash
 gpt-github-gateway init \
   --gateway home_pc \
   --bus-repository rceman/typer \
-  --bus-url git@github.com:rceman/typer.git \
-  --bus-branch ai-workspace-bus
-
-gpt-github-gateway project add \
-  --id gpt-github-gateway \
-  --path "$HOME/git/gpt-github-gateway" \
-  --repository rceman/gpt-github-gateway \
-  --resume-session 019efe9b-294a-7362-84da-875a68bbd645
+  --bus-url git@github.com:rceman/typer.git
 ```
 
-The generated session key is `gpt-github-gateway_master`. It can be overridden only in the local configuration.
-
-For the first machine bootstrap, install, configure, start, and verify the daemon in one command:
+Add a project:
 
 ```bash
-bash scripts/bootstrap-local.sh \
-  --gateway home_pc \
-  --project-path "$PWD" \
+gpt-github-gateway project add \
+  --id gpt-github-gateway \
+  --path "$HOME/.gpt-github-gateway/sources/gpt-github-gateway" \
+  --repository rceman/gpt-github-gateway \
+  --branch main \
+  --session-key gpt-github-gateway_master \
   --resume-session <CODEX_SESSION_ID>
 ```
 
-The script never stores GitHub or Airelay credentials and uses existing host Git/SSH and Airelay configuration.
+## Upgrade from the single-branch bus
+
+Dry-run:
+
+```bash
+python3 scripts/migrate-bus-multibranch.py \
+  --config "$HOME/.config/gpt-github-gateway/config.json" \
+  --dry-run
+```
+
+Execute only after validating gateway `0.3.0`:
+
+```bash
+python3 scripts/migrate-bus-multibranch.py \
+  --config "$HOME/.config/gpt-github-gateway/config.json" \
+  --execute \
+  --confirm-repository rceman/typer
+```
+
+The migration creates a verified rollback bundle before changing `rceman/typer`.
 
 ## Commands
 
 ```text
-gpt-github-gateway init
-gpt-github-gateway project add
-gpt-github-gateway projects
-gpt-github-gateway once
-gpt-github-gateway run
-gpt-github-gateway start
-gpt-github-gateway stop
-gpt-github-gateway status
-gpt-github-gateway doctor
-gpt-github-gateway tasks
-gpt-github-gateway task approve <project_id> <task_id>
-gpt-github-gateway task reject <project_id> <task_id> [reason]
-gpt-github-gateway task rollback <project_id> <task_id>
+init
+project add
+projects
+once
+run
+start
+stop
+status
+doctor
+tasks
+task approve <project_id> <task_id>
+task reject <project_id> <task_id> [reason]
+task rollback <project_id> <task_id>
+version
 ```
 
-The local HTTP API listens on `127.0.0.1:8787` by default and exposes health, readiness, status, project, and task views for a future AI Workspace UI.
+The loopback API listens on `127.0.0.1:8787` by default.
 
-See `docs/ARCHITECTURE.md`, `docs/PROTOCOL.md`, `docs/TASK_BUNDLE_V2.md`, and `docs/SECURITY.md`.
+See `docs/ARCHITECTURE.md`, `docs/PROTOCOL.md`, `docs/MULTI_BRANCH_BUS.md`, and `docs/SECURITY.md`.

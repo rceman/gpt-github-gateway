@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "layout_version", "gateway_id", "project_id", "repository", "default_branch", "bus_branch", "session_key", "created_at"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "layout_version": {"const": 1},
+    "gateway_id": {"type": "string"},
+    "project_id": {"type": "string"},
+    "repository": {"type": "string"},
+    "default_branch": {"type": "string"},
+    "bus_branch": {"type": "string"},
+    "session_key": {"type": "string"},
+    "created_at": {"type": "string", "format": "date-time"}
+  }
+}

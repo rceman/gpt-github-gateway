@@ -7,8 +7,8 @@ Protocol v2 submits one complete executable task as one UTF-8 JSON file and one 
 ## Canonical paths
 
 ```text
-inbox/<gateway_id>/<project_id>/<task_id>.taskbundle.json
-results/<gateway_id>/<project_id>/<task_id>.result.json
+project/<gateway_id>/<project_id>:inbox/<task_id>.taskbundle.json
+project/<gateway_id>/<project_id>:results/<task_id>.result.json
 ```
 
 The bundle contains a deterministic tar.gz patch pack encoded as base64. The task is visible to the gateway only after the single JSON file exists, so partial multi-commit uploads cannot execute.

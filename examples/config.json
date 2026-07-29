@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "gateway": {
     "id": "home_pc",
     "poll_interval_seconds": 10,
@@ -10,7 +10,11 @@
   "bus": {
     "repository": "rceman/typer",
     "url": "git@github.com:rceman/typer.git",
-    "branch": "ai-workspace-bus"
+    "template_branch": "main",
+    "control_branch_pattern": "gateway/{gateway_id}",
+    "project_branch_pattern": "project/{gateway_id}/{project_id}",
+    "heartbeat_interval_seconds": 600,
+    "lease_duration_seconds": 1500
   },
   "server": {
     "listen": "127.0.0.1:8787"
@@ -20,12 +24,12 @@
   },
   "projects": {
     "gpt-github-gateway": {
-      "path": "/home/anton/git/gpt-github-gateway",
+      "path": "/home/therceman/.gpt-github-gateway/sources/gpt-github-gateway",
       "repository": "rceman/gpt-github-gateway",
       "default_branch": "main",
       "airelay_profile": "codex",
       "session_key": "gpt-github-gateway_master",
-      "resume_session_id": "019efe9b-294a-7362-84da-875a68bbd645",
+      "resume_session_id": "LOCAL_CODEX_SESSION_ID",
       "launch_args": [
         "--dangerously-bypass-approvals-and-sandbox"
       ]

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/rceman/gpt-github-gateway/protocol/v3-bootstrap.schema.json",
+  "title": "Gateway Bus Bootstrap",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "template_version", "repository_role", "default_branch", "control_branch_pattern", "project_branch_pattern", "control_tree", "project_layout_version"],
+  "properties": {
+    "schema_version": {"const": 1},
+    "template_version": {"const": 1},
+    "repository_role": {"const": "gpt-github-gateway-bus"},
+    "default_branch": {"const": "main"},
+    "control_branch_pattern": {"const": "gateway/{gateway_id}"},
+    "project_branch_pattern": {"const": "project/{gateway_id}/{project_id}"},
+    "control_tree": {"const": ["gateway.json"]},
+    "project_layout_version": {"const": 1}
+  }
+}

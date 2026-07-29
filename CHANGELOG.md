@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.3.0 - 2026-07-29
+
+- Replace the single shared bus branch with an immutable `main` template, one rolling control branch per gateway, and one append-only branch per gateway project.
+- Add schema-v2 configuration, branch-pattern validation, a shared bare mirror, isolated project worktrees, and cross-process Git operation locking.
+- Add one-file `gateway.json` control snapshots with heartbeat leases and force-with-lease replacement.
+- Add deterministic project branch bootstrap, per-project queues, atomic result/checkpoint commits, and bounded non-fast-forward retries.
+- Add the guarded `scripts/migrate-bus-multibranch.py` migration and rollback bundle workflow.
+
 ## 0.2.0 - 2026-07-28
 
 - Add atomic protocol-v2 task bundles for one-file Git bus submission.

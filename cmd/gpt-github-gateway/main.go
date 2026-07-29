@@ -18,7 +18,7 @@ import (
 	"github.com/rceman/gpt-github-gateway/internal/supervisor"
 )
 
-const version = "0.2.0"
+const version = "0.3.0"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -118,7 +118,9 @@ func initConfig(path string, args []string) error {
 	gatewayID := set.String("gateway", "", "stable gateway ID")
 	busRepository := set.String("bus-repository", "rceman/typer", "GitHub repository identity")
 	busURL := set.String("bus-url", "git@github.com:rceman/typer.git", "Git clone URL")
-	busBranch := set.String("bus-branch", "ai-workspace-bus", "Git bus branch")
+	templateBranch := set.String("template-branch", config.DefaultTemplateBranch, "immutable bus template branch")
+	controlPattern := set.String("control-branch-pattern", config.DefaultControlPattern, "gateway control branch pattern")
+	projectPattern := set.String("project-branch-pattern", config.DefaultProjectPattern, "project branch pattern")
 	force := set.Bool("force", false, "replace existing config")
 	if err := set.Parse(args); err != nil {
 		return err
@@ -130,7 +132,7 @@ func initConfig(path string, args []string) error {
 		return fmt.Errorf("config already exists: %s", path)
 	}
 	cfg := &config.Config{
-		SchemaVersion: 1,
+		SchemaVersion: config.SchemaVersion,
 		Gateway: config.GatewayConfig{
 			ID:                  *gatewayID,
 			PollIntervalSeconds: 10,
@@ -138,9 +140,13 @@ func initConfig(path string, args []string) error {
 			AllowPatchRepair:    true,
 		},
 		Bus: config.BusConfig{
-			Repository: *busRepository,
-			URL:        *busURL,
-			Branch:     *busBranch,
+			Repository:               *busRepository,
+			URL:                      *busURL,
+			TemplateBranch:           *templateBranch,
+			ControlBranchPattern:     *controlPattern,
+			ProjectBranchPattern:     *projectPattern,
+			HeartbeatIntervalSeconds: config.DefaultHeartbeatSeconds,
+			LeaseDurationSeconds:     config.DefaultLeaseSeconds,
 		},
 		Server:   config.ServerConfig{Listen: "127.0.0.1:8787"},
 		Airelay:  config.AirelayConfig{Binary: "airelay"},

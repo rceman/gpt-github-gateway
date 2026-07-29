@@ -8,7 +8,6 @@ usage: scripts/bootstrap-local.sh \
   --project-path ABSOLUTE_PROJECT_PATH \
   --resume-session CODEX_SESSION_ID \
   [--config PATH] \
-  [--bus-branch BRANCH] \
   [--force-config]
 USAGE
 }
@@ -17,7 +16,6 @@ gateway_id=""
 project_path=""
 resume_session=""
 config_path="${GPT_GITHUB_GATEWAY_CONFIG:-${HOME}/.config/gpt-github-gateway/config.json}"
-bus_branch="ai-workspace-bus"
 force_config=false
 
 while [[ $# -gt 0 ]]; do
@@ -26,7 +24,6 @@ while [[ $# -gt 0 ]]; do
     --project-path) project_path="${2:?missing value for --project-path}"; shift 2 ;;
     --resume-session) resume_session="${2:?missing value for --resume-session}"; shift 2 ;;
     --config) config_path="${2:?missing value for --config}"; shift 2 ;;
-    --bus-branch) bus_branch="${2:?missing value for --bus-branch}"; shift 2 ;;
     --force-config) force_config=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "unknown argument: $1" >&2; usage; exit 2 ;;
@@ -50,7 +47,6 @@ if [[ ! -f "$config_path" || "$force_config" == true ]]; then
     --gateway "$gateway_id"
     --bus-repository rceman/typer
     --bus-url git@github.com:rceman/typer.git
-    --bus-branch "$bus_branch"
   )
   [[ "$force_config" == true ]] && init_args+=(--force)
   "$gateway_bin" "${init_args[@]}"
@@ -81,7 +77,7 @@ if grep -q 'failed:' <<<"$doctor_output"; then
   exit 1
 fi
 
-for _ in $(seq 1 30); do
+for _ in $(seq 1 60); do
   if curl -fsS --max-time 2 http://127.0.0.1:8787/readyz >/dev/null; then
     echo "gateway ready: http://127.0.0.1:8787/readyz"
     exit 0

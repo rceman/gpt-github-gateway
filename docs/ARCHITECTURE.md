@@ -2,9 +2,7 @@
 
 ## Responsibility boundary
 
-`gpt-review-planner` owns the normative executable patch-pack format and semantic validation. `gpt-github-gateway` owns transport validation, safe local materialization, repository isolation, Airelay dispatch, result publication, and recovery. `rceman/typer` remains a passive private Git bus.
-
-GPT owns architecture, behavior contracts, fixtures, tests, production code, static review, patch packs, and post-execution delta review. The local execution side owns repository identity checks, patch application, dependency restoration, runtime gates, narrow integration corrections, commits, and evidence.
+`gpt-review-planner` owns executable patch-pack semantics, evidence, and canonical validation. `gpt-github-gateway` owns transport, branch management, safe materialization, local repository isolation, Airelay dispatch, result publication, and recovery. `rceman/typer` is passive private transport.
 
 ## Identity hierarchy
 
@@ -14,82 +12,52 @@ gateway_id
     └── task_id
 ```
 
-A `project_id` is unique only inside its gateway. Every remote task contains all three IDs. A gateway processes only its own inbox subtree.
+The same project may be registered on multiple gateways. Its bus branch is therefore derived from both gateway and project identity.
 
-## Git bus
-
-Protocol v2 uses one immutable input file and one final output file:
+## Git bus branches
 
 ```text
-inbox/<gateway_id>/<project_id>/<task_id>.taskbundle.json
-results/<gateway_id>/<project_id>/<task_id>.result.json
+main
+    immutable bootstrap root
+
+gateway/<gateway_id>
+    rolling latest gateway.json snapshot
+
+project/<gateway_id>/<project_id>
+    durable append-only coordination history
 ```
 
-The input contains a structured JSON task document plus a deterministic base64-encoded tar.gz patch pack. Publishing the one complete file atomically submits the task. Intermediate execution state is local and is not committed to the bus.
+`main` contains no runtime data. Every control snapshot has `main` as its only parent and is replaced with exact `force-with-lease`. Project branches are never force-pushed.
 
 ## Local state
 
 ```text
 ~/.gpt-github-gateway/<gateway_id>/
 ├── bus/
+│   ├── mirror.git/
+│   ├── template.commit
+│   └── projects/<project_id>/
+├── <project_id>/
+│   ├── tasks/<task_id>/
+│   └── worktrees/<task_id>/
 ├── daemon.pid
-├── gateway.log
-└── <project_id>/
-    ├── worktrees/
-    │   └── <task_id>/
-    └── tasks/
-        └── <task_id>/
-            ├── task.json
-            ├── TASK_REQUEST.json
-            ├── patch-pack/
-            ├── AGENT_HANDOFF.md
-            ├── AGENT_RESPONSE.md
-            ├── agent-result.json
-            ├── status.json
-            └── .taskbundle-sha256
+├── daemon.lock
+└── gateway.log
 ```
 
-The configured source checkout is used only as the owning Git repository for `git worktree`. It is not switched, stashed, reset, cleaned, or committed by gateway execution.
+One bare mirror is shared by project worktrees. Git operations are serialized by an inter-process lock.
 
-## Airelay session model
+## Execution model
 
-Each local project has an Airelay profile and stable session key. The default key is `<project_id>_master`.
+Each project owns one worker and one Airelay session. Workers for different projects may run concurrently. A project worker processes tasks serially in `submitted_at`, then `task_id`, order.
 
-When the session is not active and a local `resume_session_id` is configured, the gateway starts it from local configuration. Remote task data cannot alter the executable, profile, session key, resume ID, launch arguments, repository path, or sandbox policy.
-
-After task validation and patch application, the gateway sends only:
-
-```text
-Read <absolute-local-AGENT_HANDOFF.md-path> and execute it exactly.
-```
-
-Detailed instructions remain in the validated handoff file.
-
-## Local execution modes
-
-The local configuration selects one mode:
-
-- `auto`: dispatch every valid private-bus task immediately;
-- `manual`: wait for explicit local approval;
-- `disabled`: materialize but refuse execution.
-
-The default is `auto`. A remote task cannot select or weaken this policy.
-
-## Execution phases
-
-1. Fast-forward the Git bus.
-2. Discover protocol-v2 bundles addressed to the gateway; retain protocol-v1 read compatibility.
-3. Validate bundle JSON, routing identity, base64, digest, sizes, archive metadata, and safe paths.
-4. Atomically materialize the structured task document and patch pack.
-5. Validate manifest, handoff identity, project identity, and target base revision.
-6. Apply the local execution policy.
-7. Create a task branch, backup ref, and isolated worktree.
-8. Apply the supplied patch and verify exact declared file-operation scope.
-9. Append machine-local runtime paths to `AGENT_HANDOFF.md`.
-10. Ensure the configured Airelay session is reachable and dispatch the short prompt.
-11. Wait for `agent-result.json` and `AGENT_RESPONSE.md`.
-12. Verify result identity, gates, commits, and committed planner evidence.
-13. Publish one final protocol-v2 result JSON file.
-14. GPT performs a bounded delta review.
-
-A failed patch may be handed to the agent for narrow manual integration only when the local project policy permits it. The manifest scope and behavior contract remain locked.
+1. Fetch and verify immutable `main`.
+2. Sync one project branch.
+3. Validate task bundle routing and archive safety.
+4. Materialize the task locally.
+5. Validate patch-pack and source repository identity.
+6. Create the isolated source worktree.
+7. Dispatch the canonical `AGENT_HANDOFF.md` to the configured Airelay session.
+8. Verify implementation, gates, and evidence.
+9. Commit the final result and updated checkpoint together to the project branch.
+10. Publish active/idle state through the rolling control snapshot.

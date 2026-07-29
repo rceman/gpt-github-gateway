@@ -28,13 +28,28 @@ func Start(layout config.Layout) error {
 		return err
 	}
 	deadline := time.Now().Add(15 * time.Second)
+	var stableSince time.Time
 	for time.Now().Before(deadline) {
 		if running, _ := Status(layout); running {
-			return nil
+			if stableSince.IsZero() {
+				stableSince = time.Now()
+			}
+			if time.Since(stableSince) >= time.Second {
+				return nil
+			}
+		} else {
+			stableSince = time.Time{}
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	return fmt.Errorf("gateway process did not become visible")
+	message := "gateway process did not remain running"
+	if data, readErr := os.ReadFile(layout.LogFile); readErr == nil && len(data) > 0 {
+		if len(data) > 4096 {
+			data = data[len(data)-4096:]
+		}
+		message += ": " + strings.TrimSpace(string(data))
+	}
+	return fmt.Errorf("%s", message)
 }
 
 func Stop(layout config.Layout) error {
