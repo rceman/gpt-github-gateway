@@ -10,8 +10,8 @@
   "evidence_directory": ".gpt-review/evidence/v0.0.0/patch-20260727-180000-test",
   "workflow": {
     "repository": "https://github.com/rceman/gpt-review-planner",
-    "version": "v1.2.0",
-    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "version": "v1.3.0",
+    "commit": "b1a45b1e9475ab29dfd3e84d523b70897c7b8918",
     "document": "GPT_REVIEW_PLANNER.md"
   },
   "target": {

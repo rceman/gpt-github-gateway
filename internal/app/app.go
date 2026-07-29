@@ -196,7 +196,7 @@ func (a *App) PublishControl(ctx context.Context, status string) error {
 		Status: status, ExecutionMode: a.Config.Gateway.TaskExecutionMode,
 		StartedAt: a.startedAt, HeartbeatAt: now,
 		LeaseExpiresAt: now.Add(time.Duration(a.Config.Bus.LeaseDurationSeconds) * time.Second),
-		Capabilities:   []string{"gpt-review-planner-v1.2.0", "apply-patch-pack", "atomic-task-bundle-v2", "atomic-result-v2", "structured-json-task", "automatic-airelay-dispatch", "isolated-git-worktree", "airelay-session", "multi-branch-bus-v1"},
+		Capabilities:   gatewayCapabilities(),
 		Runtime:        bus.GatewayRuntime{PID: os.Getpid(), Readiness: readiness(a.Snapshot().Ready), Doctor: doctorState(a.Snapshot().LastError)},
 	}
 	a.mu.RLock()
@@ -223,6 +223,10 @@ func (a *App) PublishControl(ctx context.Context, status string) error {
 	}
 	a.mu.RUnlock()
 	return a.Bus.PublishControl(ctx, state)
+}
+
+func gatewayCapabilities() []string {
+	return []string{"gpt-review-planner-v1.3.0", "apply-patch-pack", "atomic-task-bundle-v2", "atomic-result-v2", "structured-json-task", "automatic-airelay-dispatch", "isolated-git-worktree", "airelay-session", "multi-branch-bus-v1"}
 }
 
 func readiness(value bool) string {

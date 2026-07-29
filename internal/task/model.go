@@ -16,8 +16,8 @@ import (
 
 const (
 	WorkflowRepository = "https://github.com/rceman/gpt-review-planner"
-	WorkflowVersion    = "v1.2.0"
-	WorkflowCommit     = "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e"
+	WorkflowVersion    = "v1.3.0"
+	WorkflowCommit     = "b1a45b1e9475ab29dfd3e84d523b70897c7b8918"
 	WorkflowDocument   = "GPT_REVIEW_PLANNER.md"
 )
 

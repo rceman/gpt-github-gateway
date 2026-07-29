@@ -43,6 +43,15 @@ func TestManifestRequiresPinnedPlanner(t *testing.T) {
 	}
 }
 
+func TestPinnedPlannerIdentity(t *testing.T) {
+	if WorkflowVersion != "v1.3.0" {
+		t.Fatalf("unexpected workflow version %q", WorkflowVersion)
+	}
+	if WorkflowCommit != "b1a45b1e9475ab29dfd3e84d523b70897c7b8918" {
+		t.Fatalf("unexpected workflow commit %q", WorkflowCommit)
+	}
+}
+
 func TestAgentResultRequiresEveryGate(t *testing.T) {
 	manifest := Manifest{Gates: []Gate{{ID: "test"}, {ID: "build"}}}
 	result := AgentResult{

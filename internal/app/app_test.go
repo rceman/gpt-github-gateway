@@ -55,6 +55,22 @@ func TestAgentRunningUsesCanonicalResponseFilename(t *testing.T) {
 	}
 }
 
+func TestGatewayCapabilitiesAdvertisePlannerPin(t *testing.T) {
+	capabilities := gatewayCapabilities()
+	found := false
+	for _, capability := range capabilities {
+		if capability == "gpt-review-planner-v1.3.0" {
+			found = true
+		}
+		if capability == "gpt-review-planner-v1.2.0" {
+			t.Fatal("legacy planner capability must not be advertised")
+		}
+	}
+	if !found {
+		t.Fatal("planner v1.3.0 capability is missing")
+	}
+}
+
 func writeTestFile(path string) error {
 	return os.WriteFile(path, []byte("{}\n"), 0o600)
 }
