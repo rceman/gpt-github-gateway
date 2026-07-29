@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "implementation_commit": "4f3ca667f722cef7947e019e934c1a4fda43552f",
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "status": "pass"
+    },
+    {
+      "id": "REQ-002",
+      "status": "pass"
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "status": "pass",
+      "exit": 0
+    },
+    {
+      "id": "go-vet",
+      "status": "pass",
+      "exit": 0
+    },
+    {
+      "id": "go-test",
+      "status": "pass",
+      "exit": 0
+    },
+    {
+      "id": "go-build",
+      "status": "pass",
+      "exit": 0
+    },
+    {
+      "id": "patch-scope",
+      "status": "pass",
+      "exit": 0
+    }
+  ],
+  "deviations": []
+}

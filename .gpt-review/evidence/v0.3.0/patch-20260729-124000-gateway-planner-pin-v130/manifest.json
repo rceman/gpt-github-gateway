@@ -1,0 +1,103 @@
+{
+  "schema_version": 2,
+  "patch_id": "patch-20260729-124000-gateway-planner-pin-v130",
+  "title": "Pin gateway to gpt-review-planner v1.3.0",
+  "description": "Updates the immutable planner workflow pin and advertised capability so the gateway can accept planner v1.3.0 smoke tasks.",
+  "created_at": "2026-07-29T12:40:00Z",
+  "patch_timestamp": "20260729-124000",
+  "patch_slug": "gateway-planner-pin-v130",
+  "baseline_release": "v0.3.0",
+  "evidence_directory": ".gpt-review/evidence/v0.3.0/patch-20260729-124000-gateway-planner-pin-v130",
+  "workflow": {
+    "repository": "https://github.com/rceman/gpt-review-planner",
+    "version": "v1.2.0",
+    "commit": "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e",
+    "document": "GPT_REVIEW_PLANNER.md"
+  },
+  "target": {
+    "repository": "rceman/gpt-github-gateway",
+    "branch": "main",
+    "base_revision": "d40041417e19da8d6934757d28bda75721d34e20"
+  },
+  "files_created": [],
+  "files_modified": [
+    "internal/app/app.go",
+    "internal/app/app_test.go",
+    "internal/task/model.go",
+    "internal/task/model_test.go",
+    "internal/task/testdata/valid-manifest.json"
+  ],
+  "files_deleted": [],
+  "requirements": [
+    {
+      "id": "REQ-001",
+      "summary": "Pin executable patch validation to the merged planner v1.3.0 baseline.",
+      "acceptance": [
+        "AC-001: WorkflowVersion is exactly v1.3.0.",
+        "AC-002: WorkflowCommit is exactly b1a45b1e9475ab29dfd3e84d523b70897c7b8918.",
+        "AC-003: The canonical valid-manifest fixture uses the same immutable pin.",
+        "AC-004: A regression test locks the version and commit."
+      ]
+    },
+    {
+      "id": "REQ-002",
+      "summary": "Advertise the exact planner v1.3.0 capability in gateway control snapshots.",
+      "acceptance": [
+        "AC-005: gatewayCapabilities includes gpt-review-planner-v1.3.0.",
+        "AC-006: gatewayCapabilities does not include gpt-review-planner-v1.2.0.",
+        "AC-007: Existing protocol and multi-branch capabilities remain present.",
+        "AC-008: A regression test locks the advertised planner capability."
+      ]
+    }
+  ],
+  "gates": [
+    {
+      "id": "go-format",
+      "name": "Go formatting",
+      "kind": "command",
+      "command": "gofmt -w internal/app/app.go internal/app/app_test.go internal/task/model.go internal/task/model_test.go && test -z \"$(gofmt -l .)\""
+    },
+    {
+      "id": "go-vet",
+      "name": "Go static analysis",
+      "kind": "command",
+      "command": "go vet ./..."
+    },
+    {
+      "id": "go-test",
+      "name": "Go tests",
+      "kind": "command",
+      "command": "go test ./..."
+    },
+    {
+      "id": "go-build",
+      "name": "Go build",
+      "kind": "command",
+      "command": "go build ./..."
+    },
+    {
+      "id": "patch-scope",
+      "name": "Exact patch scope",
+      "kind": "scope"
+    }
+  ],
+  "gpt_static_checks_performed": [
+    "Compared the current gateway immutable pin with the merged planner 1.3.0 baseline.",
+    "Prepared a five-file unified diff limited to pin constants, canonical fixture, capability publication, and regression tests.",
+    "Verified the task is compatible with the currently deployed planner v1.2.0 pin so the gateway can bootstrap itself."
+  ],
+  "gpt_runtime_checks_not_performed": [
+    "Host gofmt, go vet, go test, and go build.",
+    "Live gateway pickup, isolated worktree execution, Airelay dispatch, evidence commit, and result publication.",
+    "Merge, reinstall, restart, or control snapshot refresh."
+  ],
+  "known_integration_risks": [
+    "The deployed gateway continues to accept only planner v1.2.0 packs until this source task is reviewed, merged, installed, and restarted.",
+    "The planner project lacks a persisted resume_session_id, but the currently reachable free session is sufficient for the later smoke task while it remains active."
+  ],
+  "forbidden_deviations": [
+    "Do not change taskbundle schemas, branch layout, execution policy, session configuration, or source repository paths.",
+    "Do not merge, install, restart the gateway, or modify rceman/typer outside normal result publication.",
+    "Do not change the target planner baseline or accept multiple mutable planner pins."
+  ]
+}
