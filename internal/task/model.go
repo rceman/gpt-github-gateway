@@ -1,8 +1,10 @@
 package task
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,12 +18,12 @@ import (
 
 const (
 	WorkflowRepository = "https://github.com/rceman/gpt-review-planner"
-	WorkflowVersion    = "v1.2.0"
-	WorkflowCommit     = "07ab94b358e8634fa0e547acaa0cf6e237ebbc2e"
+	WorkflowVersion    = "v1.3.0"
+	WorkflowCommit     = "f8cb8bc67c138f7e0e026c9270d3bd89dcd855d1"
 	WorkflowDocument   = "GPT_REVIEW_PLANNER.md"
 )
 
-var shaPattern = regexp.MustCompile(`^[0-9a-fA-F]{40}$`)
+var shaPattern = regexp.MustCompile(`^[0-9a-f]{40}$`)
 
 type Envelope struct {
 	SchemaVersion    int    `json:"schema_version"`
@@ -65,20 +67,17 @@ type WorkflowPin struct {
 	Commit     string `json:"commit"`
 	Document   string `json:"document"`
 }
-
 type Target struct {
 	Repository   string `json:"repository"`
 	Branch       string `json:"branch"`
 	BaseRevision string `json:"base_revision"`
 }
-
 type Requirement struct {
 	ID         string   `json:"id"`
 	Summary    string   `json:"summary"`
 	Acceptance []string `json:"acceptance"`
 	AllowNA    bool     `json:"allow_na,omitempty"`
 }
-
 type Gate struct {
 	ID       string `json:"id"`
 	Name     string `json:"name"`
@@ -94,9 +93,11 @@ type AgentResult struct {
 	Status               string           `json:"status"`
 	ImplementationCommit string           `json:"implementation_commit,omitempty"`
 	EvidenceCommit       string           `json:"evidence_commit,omitempty"`
+	Summary              string           `json:"summary"`
+	Details              []string         `json:"details"`
 	Gates                []AgentGate      `json:"gates"`
 	Deviations           []AgentDeviation `json:"deviations"`
-	Summary              string           `json:"summary"`
+	NextAction           string           `json:"next_action,omitempty"`
 }
 
 type AgentGate struct {
@@ -105,7 +106,6 @@ type AgentGate struct {
 	Exit    int    `json:"exit"`
 	Summary string `json:"summary"`
 }
-
 type AgentDeviation struct {
 	ID              string   `json:"id"`
 	Kind            string   `json:"kind"`
@@ -115,7 +115,6 @@ type AgentDeviation struct {
 	BehaviorChanged bool     `json:"behavior_changed"`
 	Requirements    []string `json:"requirements"`
 }
-
 type Status struct {
 	SchemaVersion int       `json:"schema_version"`
 	TaskID        string    `json:"task_id"`
@@ -127,7 +126,6 @@ type Status struct {
 	Worktree      string    `json:"worktree,omitempty"`
 	ResultBranch  string    `json:"result_branch,omitempty"`
 }
-
 type Approval struct {
 	SchemaVersion int       `json:"schema_version"`
 	TaskID        string    `json:"task_id"`
@@ -137,36 +135,34 @@ type Approval struct {
 }
 
 func LoadEnvelope(path string) (Envelope, error) {
-	var value Envelope
-	if err := decodeStrict(path, &value); err != nil {
+	var v Envelope
+	if err := decodeStrict(path, &v); err != nil {
 		return Envelope{}, err
 	}
-	if err := value.Validate(); err != nil {
+	if err := v.Validate(); err != nil {
 		return Envelope{}, err
 	}
-	return value, nil
+	return v, nil
 }
-
 func LoadManifest(path string) (Manifest, error) {
-	var value Manifest
-	if err := decodeStrict(path, &value); err != nil {
+	var v Manifest
+	if err := decodeStrict(path, &v); err != nil {
 		return Manifest{}, err
 	}
-	if err := value.Validate(); err != nil {
+	if err := v.Validate(); err != nil {
 		return Manifest{}, err
 	}
-	return value, nil
+	return v, nil
 }
-
 func LoadAgentResult(path string) (AgentResult, error) {
-	var value AgentResult
-	if err := decodeStrict(path, &value); err != nil {
+	var v AgentResult
+	if err := decodeStrict(path, &v); err != nil {
 		return AgentResult{}, err
 	}
-	if err := value.Validate(); err != nil {
+	if err := v.Validate(); err != nil {
 		return AgentResult{}, err
 	}
-	return value, nil
+	return v, nil
 }
 
 func decodeStrict(path string, target any) error {
@@ -174,10 +170,83 @@ func decodeStrict(path string, target any) error {
 	if err != nil {
 		return fmt.Errorf("read %s: %w", path, err)
 	}
-	decoder := json.NewDecoder(strings.NewReader(string(data)))
+	if err := rejectDuplicateJSONKeys(data); err != nil {
+		return fmt.Errorf("decode %s: %w", path, err)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(target); err != nil {
 		return fmt.Errorf("decode %s: %w", path, err)
+	}
+	var trailing any
+	if err := decoder.Decode(&trailing); err != io.EOF {
+		return fmt.Errorf("decode %s: trailing JSON data", path)
+	}
+	return nil
+}
+
+func rejectDuplicateJSONKeys(data []byte) error {
+	d := json.NewDecoder(bytes.NewReader(data))
+	if err := scanJSONValue(d); err != nil {
+		return err
+	}
+	var trailing any
+	if err := d.Decode(&trailing); err != io.EOF {
+		return fmt.Errorf("JSON contains trailing data")
+	}
+	return nil
+}
+func scanJSONValue(d *json.Decoder) error {
+	tok, err := d.Token()
+	if err != nil {
+		return err
+	}
+	delim, ok := tok.(json.Delim)
+	if !ok {
+		return nil
+	}
+	switch delim {
+	case '{':
+		seen := map[string]bool{}
+		for d.More() {
+			kTok, err := d.Token()
+			if err != nil {
+				return err
+			}
+			k, ok := kTok.(string)
+			if !ok {
+				return fmt.Errorf("JSON object key is not a string")
+			}
+			if seen[k] {
+				return fmt.Errorf("duplicate JSON key %q", k)
+			}
+			seen[k] = true
+			if err := scanJSONValue(d); err != nil {
+				return err
+			}
+		}
+		close, err := d.Token()
+		if err != nil {
+			return err
+		}
+		if close != json.Delim('}') {
+			return fmt.Errorf("invalid JSON object terminator")
+		}
+	case '[':
+		for d.More() {
+			if err := scanJSONValue(d); err != nil {
+				return err
+			}
+		}
+		close, err := d.Token()
+		if err != nil {
+			return err
+		}
+		if close != json.Delim(']') {
+			return fmt.Errorf("invalid JSON array terminator")
+		}
+	default:
+		return fmt.Errorf("unexpected JSON delimiter %q", delim)
 	}
 	return nil
 }
@@ -214,7 +283,7 @@ func (m Manifest) Validate() error {
 		return fmt.Errorf("patch manifest does not use the required immutable gpt-review-planner pin")
 	}
 	if !shaPattern.MatchString(m.Target.BaseRevision) {
-		return fmt.Errorf("target.base_revision must be a 40-character SHA")
+		return fmt.Errorf("target.base_revision must be a lowercase 40-character SHA")
 	}
 	if strings.TrimSpace(m.Target.Repository) == "" || strings.TrimSpace(m.Target.Branch) == "" {
 		return fmt.Errorf("target repository and branch are required")
@@ -225,30 +294,30 @@ func (m Manifest) Validate() error {
 	if err := validateScopeSets(m.FilesCreated, m.FilesModified, m.FilesDeleted); err != nil {
 		return err
 	}
-	seenRequirements := map[string]bool{}
-	for _, requirement := range m.Requirements {
-		if strings.TrimSpace(requirement.ID) == "" || seenRequirements[requirement.ID] {
+	reqs := map[string]bool{}
+	for _, r := range m.Requirements {
+		if strings.TrimSpace(r.ID) == "" || reqs[r.ID] {
 			return fmt.Errorf("requirement IDs must be non-empty and unique")
 		}
-		seenRequirements[requirement.ID] = true
-		if len(requirement.Acceptance) == 0 {
-			return fmt.Errorf("requirement %s has no acceptance criteria", requirement.ID)
+		reqs[r.ID] = true
+		if len(r.Acceptance) == 0 {
+			return fmt.Errorf("requirement %s has no acceptance criteria", r.ID)
 		}
 	}
-	seenGates := map[string]bool{}
-	for _, gate := range m.Gates {
-		if strings.TrimSpace(gate.ID) == "" || seenGates[gate.ID] {
+	gates := map[string]bool{}
+	for _, g := range m.Gates {
+		if strings.TrimSpace(g.ID) == "" || gates[g.ID] {
 			return fmt.Errorf("gate IDs must be non-empty and unique")
 		}
-		seenGates[gate.ID] = true
-		switch gate.Kind {
+		gates[g.ID] = true
+		switch g.Kind {
 		case "command":
-			if strings.TrimSpace(gate.Command) == "" {
-				return fmt.Errorf("command gate %s has no command", gate.ID)
+			if strings.TrimSpace(g.Command) == "" {
+				return fmt.Errorf("command gate %s has no command", g.ID)
 			}
 		case "github-actions", "scope", "evidence":
 		default:
-			return fmt.Errorf("gate %s has unsupported kind %q", gate.ID, gate.Kind)
+			return fmt.Errorf("gate %s has unsupported kind %q", g.ID, g.Kind)
 		}
 	}
 	if err := ValidateRelativePath(m.EvidenceDirectory); err != nil {
@@ -258,7 +327,7 @@ func (m Manifest) Validate() error {
 }
 
 func (r AgentResult) Validate() error {
-	if r.SchemaVersion != 1 || !config.ValidSlug(r.TaskID) {
+	if r.SchemaVersion != 2 || !config.ValidSlug(r.TaskID) {
 		return fmt.Errorf("invalid agent result identity")
 	}
 	switch r.Status {
@@ -266,40 +335,77 @@ func (r AgentResult) Validate() error {
 	default:
 		return fmt.Errorf("unsupported agent result status %q", r.Status)
 	}
+	if strings.TrimSpace(r.Summary) == "" || len([]byte(r.Summary)) > 4096 {
+		return fmt.Errorf("summary must contain 1 to 4096 UTF-8 bytes")
+	}
+	if len(r.Details) > 64 {
+		return fmt.Errorf("details may contain at most 64 items")
+	}
+	for i, v := range r.Details {
+		if strings.TrimSpace(v) == "" || len([]byte(v)) > 2048 {
+			return fmt.Errorf("details[%d] must contain 1 to 2048 UTF-8 bytes", i)
+		}
+	}
+	if len(r.Gates) > 128 {
+		return fmt.Errorf("gates may contain at most 128 items")
+	}
+	seen := map[string]bool{}
+	for i, g := range r.Gates {
+		if strings.TrimSpace(g.ID) == "" || seen[g.ID] {
+			return fmt.Errorf("gate %d has an empty or duplicate ID", i)
+		}
+		seen[g.ID] = true
+		if g.Status != "pass" && g.Status != "fail" && g.Status != "not_run" {
+			return fmt.Errorf("gate %s has invalid status", g.ID)
+		}
+		if strings.TrimSpace(g.Summary) == "" || len([]byte(g.Summary)) > 2048 {
+			return fmt.Errorf("gate %s has invalid summary", g.ID)
+		}
+	}
+	if len(r.Deviations) > 64 {
+		return fmt.Errorf("deviations may contain at most 64 items")
+	}
+	for i, d := range r.Deviations {
+		if strings.TrimSpace(d.ID) == "" || strings.TrimSpace(d.Kind) == "" || strings.TrimSpace(d.Summary) == "" {
+			return fmt.Errorf("deviation %d has empty required text", i)
+		}
+		if d.BehaviorChanged {
+			return fmt.Errorf("agent result may not claim a behavior-changing deviation")
+		}
+		for _, req := range d.Requirements {
+			if strings.TrimSpace(req) == "" {
+				return fmt.Errorf("deviation %s has an empty requirement", d.ID)
+			}
+		}
+	}
 	if r.Status == "succeeded" {
 		if !shaPattern.MatchString(r.ImplementationCommit) || !shaPattern.MatchString(r.EvidenceCommit) {
 			return fmt.Errorf("successful result requires implementation and evidence commits")
 		}
 	}
-	for _, deviation := range r.Deviations {
-		if deviation.BehaviorChanged {
-			return fmt.Errorf("agent result may not claim a behavior-changing deviation")
-		}
+	if r.Status == "needs_gpt_revision" && (strings.TrimSpace(r.NextAction) == "" || len([]byte(r.NextAction)) > 2048) {
+		return fmt.Errorf("needs_gpt_revision requires next_action")
+	}
+	if r.NextAction != "" && len([]byte(r.NextAction)) > 2048 {
+		return fmt.Errorf("next_action exceeds 2048 UTF-8 bytes")
 	}
 	return nil
 }
 
-func (r AgentResult) ValidateAgainst(manifest Manifest) error {
+func (r AgentResult) ValidateAgainst(m Manifest) error {
 	if r.Status != "succeeded" {
 		return nil
 	}
-	expected := map[string]bool{}
-	for _, gate := range manifest.Gates {
-		expected[gate.ID] = true
+	if len(r.Gates) != len(m.Gates) {
+		return fmt.Errorf("successful result gate count mismatch")
 	}
-	seen := map[string]bool{}
-	for _, gate := range r.Gates {
-		if !expected[gate.ID] || seen[gate.ID] {
-			return fmt.Errorf("unexpected or duplicate agent gate %q", gate.ID)
+	for i, g := range m.Gates {
+		actual := r.Gates[i]
+		if actual.ID != g.ID {
+			return fmt.Errorf("successful result gate order mismatch at %d: expected %s, got %s", i, g.ID, actual.ID)
 		}
-		if gate.Status != "pass" || gate.Exit != 0 {
-			return fmt.Errorf("gate %s did not pass", gate.ID)
-		}
-		seen[gate.ID] = true
-	}
-	for id := range expected {
-		if !seen[id] {
-			return fmt.Errorf("missing agent gate result %q", id)
+		if actual.Status != "pass" || actual.Exit != 0 {
+			return fmt.Errorf("gate %s did not pass", actual.ID)
 		}
 	}
 	return nil
@@ -315,7 +421,6 @@ func ValidateRelativePath(value string) error {
 	}
 	return nil
 }
-
 func ResolveInside(root, relative string) (string, error) {
 	if err := ValidateRelativePath(relative); err != nil {
 		return "", err
@@ -334,44 +439,34 @@ func ResolveInside(root, relative string) (string, error) {
 	}
 	return resolved, nil
 }
-
-func CompareScope(manifest Manifest, actual gitx.Scope) error {
-	for label, value := range map[string]struct {
-		Expected []string
-		Actual   []string
-	}{
-		"created":  {manifest.FilesCreated, actual.Created},
-		"modified": {manifest.FilesModified, actual.Modified},
-		"deleted":  {manifest.FilesDeleted, actual.Deleted},
-	} {
-		expected := sortedCopy(value.Expected)
-		actualPaths := sortedCopy(value.Actual)
-		if strings.Join(expected, "\x00") != strings.Join(actualPaths, "\x00") {
-			return fmt.Errorf("%s scope mismatch: expected %v, got %v", label, expected, actualPaths)
+func CompareScope(m Manifest, a gitx.Scope) error {
+	for label, v := range map[string]struct{ Expected, Actual []string }{"created": {m.FilesCreated, a.Created}, "modified": {m.FilesModified, a.Modified}, "deleted": {m.FilesDeleted, a.Deleted}} {
+		e := sortedCopy(v.Expected)
+		x := sortedCopy(v.Actual)
+		if strings.Join(e, "\x00") != strings.Join(x, "\x00") {
+			return fmt.Errorf("%s scope mismatch: expected %v, got %v", label, e, x)
 		}
 	}
 	return nil
 }
-
 func validateScopeSets(sets ...[]string) error {
 	seen := map[string]string{}
 	labels := []string{"created", "modified", "deleted"}
-	for index, values := range sets {
-		for _, value := range values {
-			if err := ValidateRelativePath(value); err != nil {
-				return fmt.Errorf("%s path: %w", labels[index], err)
+	for i, values := range sets {
+		for _, v := range values {
+			if err := ValidateRelativePath(v); err != nil {
+				return fmt.Errorf("%s path: %w", labels[i], err)
 			}
-			if prior, exists := seen[value]; exists {
-				return fmt.Errorf("path %s appears in both %s and %s", value, prior, labels[index])
+			if prior, ok := seen[v]; ok {
+				return fmt.Errorf("path %s appears in both %s and %s", v, prior, labels[i])
 			}
-			seen[value] = labels[index]
+			seen[v] = labels[i]
 		}
 	}
 	return nil
 }
-
 func sortedCopy(values []string) []string {
-	result := append([]string(nil), values...)
-	sort.Strings(result)
-	return result
+	r := append([]string(nil), values...)
+	sort.Strings(r)
+	return r
 }

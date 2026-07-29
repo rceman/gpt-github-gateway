@@ -18,7 +18,7 @@ import (
 	"github.com/rceman/gpt-github-gateway/internal/supervisor"
 )
 
-const version = "0.3.0"
+const version = "0.4.0"
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -212,7 +212,7 @@ func projectCommand(configPath string, args []string) error {
 
 func taskCommand(application *app.App, args []string) error {
 	if len(args) < 3 {
-		return errors.New("usage: gpt-github-gateway task <approve|reject|rollback> <project_id> <task_id> [reason]")
+		return errors.New("usage: gpt-github-gateway task <approve|reject|rollback|complete> <project_id> <task_id> [reason]")
 	}
 	action, projectID, taskID := args[0], args[1], args[2]
 	switch action {
@@ -226,6 +226,8 @@ func taskCommand(application *app.App, args []string) error {
 		return application.Reject(projectID, taskID, reason)
 	case "rollback":
 		return application.Rollback(context.Background(), projectID, taskID)
+	case "complete":
+		return application.CompleteTask(context.Background(), projectID, taskID)
 	default:
 		return fmt.Errorf("unsupported task action %q", action)
 	}
@@ -283,6 +285,7 @@ Commands:
   task approve <project_id> <task_id>
   task reject <project_id> <task_id> [reason]
   task rollback <project_id> <task_id>
+  task complete <project_id> <task_id>
   version
 `)
 }

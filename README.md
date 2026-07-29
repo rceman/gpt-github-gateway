@@ -45,7 +45,7 @@ The control branch contains only `gateway.json`. Project branches contain `proje
 - independent append-only branch per gateway project;
 - one serial worker and one Airelay session per project;
 - separate projects may execute concurrently;
-- one-file protocol-v2 task submission and one final result commit;
+- one-file protocol-v2 task submission and one strict agent-authored JSON result and one final result commit;
 - strict identity validation across config, branch, `project.json`, task envelope, and patch manifest;
 - no remote task may select local paths, binaries, session IDs, execution mode, or launch arguments;
 - shared bare mirror with isolated project worktrees and cross-process Git operation locking;
@@ -121,3 +121,7 @@ version
 The loopback API listens on `127.0.0.1:8787` by default.
 
 See `docs/ARCHITECTURE.md`, `docs/PROTOCOL.md`, `docs/MULTI_BRANCH_BUS.md`, and `docs/SECURITY.md`.
+
+## JSON-only task completion
+
+Gateway 0.4.0 appends an authoritative `agent-result.json` path and generated `complete-task` command to every runtime handoff. The agent writes the JSON and invokes that command for `succeeded`, `needs_gpt_revision`, or `failed`. Interactive Airelay text and `AGENT_RESPONSE.md` are not terminal artifacts. If the session becomes promptable without finalization, the gateway sends one corrective prompt and then creates a synthetic failure so the queue cannot remain blocked until the global timeout.

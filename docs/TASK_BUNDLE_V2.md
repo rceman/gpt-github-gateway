@@ -48,3 +48,8 @@ Task identity is immutable. A local task directory created from one archive SHA-
 ## Compatibility
 
 Protocol-v1 directory tasks remain readable. New GPT-authored work should use protocol v2. Result publication for v2 uses one JSON file containing the final state, commits, gates, deviations, and human response.
+
+
+## Terminal finalizer contract
+
+A materialized task contains a generated executable `complete-task` helper beside `AGENT_HANDOFF.md`. It accepts no remote-selected paths: project ID, task ID, config path, gateway binary, and result path are generated locally. The helper calls `gpt-github-gateway task complete <project_id> <task_id>`. Successful invocation creates an atomic `.completion.json` marker bound to the SHA-256 of `agent-result.json`; only then may the daemon publish the bus result.

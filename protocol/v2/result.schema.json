@@ -16,20 +16,61 @@
     "completed_at"
   ],
   "properties": {
-    "schema_version": { "const": 2 },
-    "task_id": { "type": "string" },
-    "gateway_id": { "type": "string" },
-    "project_id": { "type": "string" },
-    "bundle_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
-    "state": { "type": "string" },
-    "result_branch": { "type": "string" },
-    "implementation_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-    "evidence_commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
-    "gates": { "type": "array" },
-    "deviations": { "type": "array" },
-    "summary": { "type": "string" },
-    "human_response": { "type": "string" },
-    "submitted_at": { "type": "string", "format": "date-time" },
-    "completed_at": { "type": "string", "format": "date-time" }
+    "schema_version": {
+      "const": 2
+    },
+    "task_id": {
+      "type": "string"
+    },
+    "gateway_id": {
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string"
+    },
+    "bundle_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "state": {
+      "enum": [
+        "succeeded",
+        "needs_gpt_revision",
+        "failed",
+        "rejected",
+        "rolled_back",
+        "agent_timeout",
+        "agent_unavailable",
+        "execution_disabled"
+      ]
+    },
+    "result_branch": {
+      "type": "string"
+    },
+    "implementation_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "evidence_commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "gates": {
+      "type": "array"
+    },
+    "deviations": {
+      "type": "array"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "submitted_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_at": {
+      "type": "string",
+      "format": "date-time"
+    }
   }
 }

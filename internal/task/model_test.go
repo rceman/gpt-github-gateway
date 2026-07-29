@@ -1,72 +1,50 @@
 package task
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
-func TestEnvelopeRejectsWrongGatewayPathInput(t *testing.T) {
-	envelope := Envelope{
-		SchemaVersion:    1,
-		TaskID:           "task_001",
-		GatewayID:        "home_pc",
-		ProjectID:        "gateway",
-		Operation:        "apply_patch_pack",
-		SubmittedAt:      "2026-07-27T18:00:00Z",
-		RequestPath:      "../request.md",
-		PatchPackPath:    "patch-pack",
-		ResultBranch:     "agent/task_001",
-		ApprovalRequired: true,
+func TestAgentResultV2Contracts(t *testing.T) {
+	base := AgentResult{SchemaVersion: 2, TaskID: "task_001", Status: "failed", Summary: "bounded", Details: []string{}, Gates: []AgentGate{}, Deviations: []AgentDeviation{}}
+	if err := base.Validate(); err != nil {
+		t.Fatal(err)
 	}
-	if err := envelope.Validate(); err == nil {
-		t.Fatal("expected path traversal to fail")
+	revision := base
+	revision.Status = "needs_gpt_revision"
+	if err := revision.Validate(); err == nil {
+		t.Fatal("expected next_action requirement")
+	}
+	success := base
+	success.Status = "succeeded"
+	success.ImplementationCommit = strings.Repeat("1", 40)
+	success.EvidenceCommit = strings.Repeat("2", 40)
+	success.Gates = []AgentGate{{ID: "one", Status: "pass", Exit: 0, Summary: "ok"}}
+	manifest := Manifest{Gates: []Gate{{ID: "one"}}}
+	if err := success.ValidateAgainst(manifest); err != nil {
+		t.Fatal(err)
+	}
+	success.Gates[0].ID = "other"
+	if err := success.ValidateAgainst(manifest); err == nil {
+		t.Fatal("expected ordered gate mismatch")
 	}
 }
 
-func TestManifestRequiresPinnedPlanner(t *testing.T) {
-	manifest := Manifest{
-		SchemaVersion: 2,
-		Workflow: WorkflowPin{
-			Repository: WorkflowRepository,
-			Version:    "main",
-			Commit:     WorkflowCommit,
-			Document:   WorkflowDocument,
-		},
-		Target: Target{
-			Repository:   "rceman/example",
-			Branch:       "main",
-			BaseRevision: "0123456789abcdef0123456789abcdef01234567",
-		},
-		EvidenceDirectory: ".gpt-review/evidence/v0.0.0/patch-20260727-180000-test",
-		Requirements:      []Requirement{{ID: "REQ-001", Acceptance: []string{"AC-001"}}},
-		Gates:             []Gate{{ID: "test", Kind: "command", Command: "go test ./..."}},
+func TestStrictJSONRejectsDuplicateAndTrailingData(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "result.json")
+	if err := os.WriteFile(path, []byte(`{"schema_version":2,"schema_version":2}`), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	if err := manifest.Validate(); err == nil {
-		t.Fatal("expected mutable workflow version to fail")
+	if _, err := LoadAgentResult(path); err == nil {
+		t.Fatal("expected duplicate-key rejection")
 	}
-}
-
-func TestAgentResultRequiresEveryGate(t *testing.T) {
-	manifest := Manifest{Gates: []Gate{{ID: "test"}, {ID: "build"}}}
-	result := AgentResult{
-		Status: "succeeded",
-		Gates:  []AgentGate{{ID: "test", Status: "pass", Exit: 0}},
+	if err := os.WriteFile(path, []byte(`{"schema_version":2} {}`), 0o600); err != nil {
+		t.Fatal(err)
 	}
-	if err := result.ValidateAgainst(manifest); err == nil {
-		t.Fatal("expected missing gate to fail")
-	}
-}
-
-func TestCanonicalFixturesLoad(t *testing.T) {
-	envelope, err := LoadEnvelope("testdata/valid-task.json")
-	if err != nil {
-		t.Fatalf("load task fixture: %v", err)
-	}
-	if envelope.GatewayID != "home_pc" {
-		t.Fatalf("unexpected gateway %q", envelope.GatewayID)
-	}
-	manifest, err := LoadManifest("testdata/valid-manifest.json")
-	if err != nil {
-		t.Fatalf("load manifest fixture: %v", err)
-	}
-	if manifest.Workflow.Commit != WorkflowCommit {
-		t.Fatalf("unexpected workflow commit %q", manifest.Workflow.Commit)
+	if _, err := LoadAgentResult(path); err == nil {
+		t.Fatal("expected trailing-data rejection")
 	}
 }

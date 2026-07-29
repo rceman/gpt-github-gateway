@@ -60,3 +60,10 @@ Only one task may execute per project. Several project workers may execute concu
 ## Compatibility
 
 Protocol-v2 task bundle and result payloads remain unchanged. The branch-local paths replace the former nested shared-branch paths. Protocol-v1 records may remain in backups but are not accepted as new multi-branch submissions.
+
+
+## JSON-only terminal protocol (gateway 0.4.0)
+
+The only agent-authored terminal artifact is `<task-root>/agent-result.json` using schema version 2. The runtime handoff includes `<task-root>/complete-task`; the agent must invoke it for every terminal status. The command validates task identity, schema semantics, manifest gate coverage, successful commit ancestry, exact result-branch remote head, worktree cleanliness, declared implementation scope, and committed evidence before writing an atomic completion marker.
+
+The daemon waits for that marker rather than `AGENT_RESPONSE.md`. When the Airelay session becomes promptable without a marker, the daemon issues one bounded corrective prompt. A second promptable observation after the grace period produces a synthetic `failed` result and completion marker, allowing atomic bus publication and queue advancement. Restarted gateways resume `agent_running` tasks instead of treating them as permanently blocking local state.

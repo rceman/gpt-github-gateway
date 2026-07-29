@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0 — 2026-07-29
+
+- Replace legacy dual `agent-result.json`/`AGENT_RESPONSE.md` completion with one strict JSON result.
+- Generate a task-local `complete-task` command that validates the authoritative result before daemon publication.
+- Resume interrupted `agent_running` tasks after gateway restart instead of permanently blocking the project queue.
+- Detect a promptable Airelay session without finalization, issue one corrective reprompt, then publish a bounded synthetic failure.
+- Pin executable task semantics to gpt-review-planner 1.3.0 commit `f8cb8bc67c138f7e0e026c9270d3bd89dcd855d1`.
+
 ## 0.3.0 - 2026-07-29
 
 - Replace the single shared bus branch with an immutable `main` template, one rolling control branch per gateway, and one append-only branch per gateway project.

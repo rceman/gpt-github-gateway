@@ -15,7 +15,7 @@ import (
 	"github.com/rceman/gpt-github-gateway/internal/task"
 )
 
-const GatewayVersion = "0.3.0"
+const GatewayVersion = "0.4.0"
 
 type App struct {
 	Config *config.Config
@@ -108,9 +108,6 @@ func (a *App) OnceProject(ctx context.Context, projectID string) error {
 		if err := projectBus.Materialize(remote, localRoot, a.Config.Gateway.MaxTaskFileBytes, a.Config.Gateway.MaxTaskAggregateBytes); err != nil {
 			return err
 		}
-		if blocksProjectQueue(localRoot) {
-			return nil
-		}
 		if skipLocalTask(localRoot, a.Config.Gateway.TaskExecutionMode) {
 			continue
 		}
@@ -125,7 +122,7 @@ func (a *App) OnceProject(ctx context.Context, projectID string) error {
 			_ = a.PublishControl(ctx, "degraded")
 			return runErr
 		}
-		if err := projectBus.PublishAtomicResult(ctx, remote, outcome.Status, outcome.Result, outcome.Response); err != nil {
+		if err := projectBus.PublishAtomicResult(ctx, remote, outcome.Status, outcome.Result, nil); err != nil {
 			a.clearActive(projectID)
 			return err
 		}
@@ -196,7 +193,7 @@ func (a *App) PublishControl(ctx context.Context, status string) error {
 		Status: status, ExecutionMode: a.Config.Gateway.TaskExecutionMode,
 		StartedAt: a.startedAt, HeartbeatAt: now,
 		LeaseExpiresAt: now.Add(time.Duration(a.Config.Bus.LeaseDurationSeconds) * time.Second),
-		Capabilities:   []string{"gpt-review-planner-v1.2.0", "apply-patch-pack", "atomic-task-bundle-v2", "atomic-result-v2", "structured-json-task", "automatic-airelay-dispatch", "isolated-git-worktree", "airelay-session", "multi-branch-bus-v1"},
+		Capabilities:   []string{"gpt-review-planner-v1.3.0", "apply-patch-pack", "atomic-task-bundle-v2", "atomic-result-v2", "structured-json-task", "automatic-airelay-dispatch", "isolated-git-worktree", "airelay-session", "multi-branch-bus-v1", "json-only-agent-result-v2", "complete-task-finalizer", "agent-terminal-recovery"},
 		Runtime:        bus.GatewayRuntime{PID: os.Getpid(), Readiness: readiness(a.Snapshot().Ready), Doctor: doctorState(a.Snapshot().LastError)},
 	}
 	a.mu.RLock()
@@ -252,6 +249,9 @@ func (a *App) Reject(projectID, taskID, reason string) error {
 }
 func (a *App) Rollback(ctx context.Context, projectID, taskID string) error {
 	return a.Runner.Rollback(ctx, projectID, taskID)
+}
+func (a *App) CompleteTask(ctx context.Context, projectID, taskID string) error {
+	return a.Runner.CompleteTask(ctx, projectID, taskID)
 }
 
 func (a *App) Snapshot() Snapshot {
@@ -371,27 +371,10 @@ func skipLocalTask(root, executionMode string) bool {
 		approval, err := task.ReadApproval(root, status.TaskID)
 		return err == nil && approval.Decision == "pending"
 	case "agent_running":
-		return !(regularFile(filepath.Join(root, "agent-result.json")) && regularFile(filepath.Join(root, task.AgentResponseFilename)))
+		return false
 	default:
 		return false
 	}
-}
-
-func blocksProjectQueue(root string) bool {
-	status, err := task.ReadStatus(root)
-	if err != nil {
-		return false
-	}
-	switch status.State {
-	case "preparing_worktree", "applying_patch", "patch_repair_required", "agent_running":
-		return !(regularFile(filepath.Join(root, "agent-result.json")) && regularFile(filepath.Join(root, task.AgentResponseFilename)))
-	default:
-		return false
-	}
-}
-func regularFile(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.Mode().IsRegular()
 }
 
 // Retain JSON import as part of the stable application result surface.
