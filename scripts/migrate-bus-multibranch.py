@@ -15,7 +15,7 @@ import time
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 TERMINAL_STATES = {
     "succeeded", "completed", "failed", "needs_gpt_revision", "rejected",
@@ -34,6 +34,7 @@ FINAL_BRANCHES = {
     "project/home_pc/gpt-review-planner",
     "project/home_pc/airelay",
 }
+TARGET_GATEWAY_VERSION = "0.3.0"
 
 
 def run(args: list[str], *, cwd: Path | None = None, check: bool = True) -> subprocess.CompletedProcess[str]:
@@ -83,20 +84,55 @@ def list_remote_refs(url: str) -> tuple[dict[str, str], dict[str, str]]:
     return branches, tags
 
 
-def scan_active_tasks(gateway_root: Path) -> list[tuple[str, str]]:
+def scan_active_tasks(gateway_root: Path, project_ids: Iterable[str]) -> list[tuple[str, str]]:
     blocking: list[tuple[str, str]] = []
-    if not gateway_root.exists():
-        return blocking
-    for status_path in gateway_root.rglob("status.json"):
-        try:
-            payload = json.loads(status_path.read_text(encoding="utf-8"))
-        except Exception as exc:  # noqa: BLE001
-            blocking.append((str(status_path), f"invalid status JSON: {exc}"))
+    for project_id in project_ids:
+        tasks_root = gateway_root / project_id / "tasks"
+        if not tasks_root.is_dir():
             continue
-        state = str(payload.get("state", ""))
-        if state not in TERMINAL_STATES:
-            blocking.append((str(status_path), state or "missing state"))
+        for task_root in sorted(path for path in tasks_root.iterdir() if path.is_dir()):
+            status_path = task_root / "status.json"
+            if not status_path.exists():
+                continue
+            try:
+                payload = json.loads(status_path.read_text(encoding="utf-8"))
+            except Exception as exc:  # noqa: BLE001
+                blocking.append((str(status_path), f"invalid status JSON: {exc}"))
+                continue
+            state = str(payload.get("state", ""))
+            if state not in TERMINAL_STATES:
+                blocking.append((str(status_path), state or "missing state"))
     return blocking
+
+
+def delete_remote_ref(url: str, ref: str) -> None:
+    if not (ref.startswith("refs/heads/") or ref.startswith("refs/tags/")):
+        raise RuntimeError(f"unsupported remote ref: {ref}")
+    run(["git", "push", url, f":{ref}"])
+
+
+def verify_binary_version(binary: Path) -> str:
+    output = run([str(binary), "version"]).stdout.strip()
+    if output != TARGET_GATEWAY_VERSION:
+        raise RuntimeError(f"installed binary version must be {TARGET_GATEWAY_VERSION}, got {output}")
+    return output
+
+
+def preflight_source(source_root: Path) -> dict[str, str]:
+    version_path = source_root / "VERSION"
+    if not (source_root / ".git").exists():
+        raise RuntimeError(f"source root is not a Git repository: {source_root}")
+    version = version_path.read_text(encoding="utf-8").strip()
+    if version != TARGET_GATEWAY_VERSION:
+        raise RuntimeError(f"source version must be {TARGET_GATEWAY_VERSION}, got {version}")
+    commit = run(["git", "-C", str(source_root), "rev-parse", "HEAD"]).stdout.strip()
+    with tempfile.TemporaryDirectory(prefix="gpt-gateway-candidate-") as temp_name:
+        candidate = Path(temp_name) / "gpt-github-gateway"
+        run(["go", "build", "-o", str(candidate), "./cmd/gpt-github-gateway"], cwd=source_root)
+        output = run([str(candidate), "version"]).stdout.strip()
+        if output != TARGET_GATEWAY_VERSION:
+            raise RuntimeError(f"candidate binary version must be {TARGET_GATEWAY_VERSION}, got {output}")
+    return {"source_commit": commit, "source_version": version}
 
 
 def new_main_files() -> dict[str, str]:
@@ -223,7 +259,8 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
     gateway_id = config["gateway"]["id"]
     home = Path.home()
     gateway_root = home / ".gpt-github-gateway" / gateway_id
-    blocking = scan_active_tasks(gateway_root)
+    source_info = preflight_source(source_root)
+    blocking = scan_active_tasks(gateway_root, config["projects"].keys())
     if blocking:
         raise RuntimeError("non-terminal gateway tasks exist: " + "; ".join(f"{p}: {s}" for p, s in blocking))
 
@@ -233,7 +270,9 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
     except FileExistsError as exc:
         raise RuntimeError(f"migration lock already exists: {lock}") from exc
 
-    report: dict[str, Any] = {"schema_version": 1, "started_at": datetime.now(timezone.utc).isoformat(), "gateway_id": gateway_id}
+    report: dict[str, Any] = {"schema_version": 1, "started_at": datetime.now(timezone.utc).isoformat(), "gateway_id": gateway_id, **source_info}
+    backup: Path | None = None
+    stage = "backup"
     try:
         backup = home / ".gpt-github-gateway" / "backups" / f"typer-multibranch-{utc_stamp()}"
         backup.mkdir(parents=True)
@@ -263,8 +302,13 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
         if gateway_bin.exists():
             shutil.copy2(gateway_bin, backup / "gateway-binary-before-migration")
 
+        stage = "stable-machine-code"
         run([str(gateway_bin), "--config", str(config_path), "stop"])
 
+        run(["bash", str(source_root / "scripts" / "install.sh")], cwd=source_root)
+        verify_binary_version(gateway_bin)
+
+        stage = "remote-main"
         with tempfile.TemporaryDirectory(prefix="typer-main-reset-") as temp_name:
             temp = Path(temp_name)
             repo = temp / "repo"
@@ -293,6 +337,7 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
         if not (airelay_path / ".git").exists():
             airelay_path.parent.mkdir(parents=True, exist_ok=True)
             run(["git", "clone", "git@github.com:therceman/airelay.git", str(airelay_path)])
+        stage = "configuration"
         converted = convert_config(config, airelay_path)
         atomic_json(config_path, converted)
 
@@ -300,7 +345,7 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
         if old_bus.exists():
             shutil.move(str(old_bus), str(backup / "local-bus-before-migration"))
 
-        run(["bash", str(source_root / "scripts" / "install.sh")], cwd=source_root)
+        stage = "gateway-runtime"
         run([str(gateway_bin), "--config", str(config_path), "start"])
         wait_ready("http://127.0.0.1:8787/readyz")
 
@@ -317,14 +362,15 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
         with tempfile.TemporaryDirectory(prefix="typer-verify-") as verify_temp:
             verify_branch_trees(url, gateway_id, Path(verify_temp))
 
+        stage = "legacy-ref-cleanup"
         current, current_tags = list_remote_refs(url)
         deleted_branches: list[str] = []
         for branch in sorted(set(current) - expected):
-            run(["git", "--git-dir", str(mirror), "push", "origin", ":refs/heads/" + branch])
+            delete_remote_ref(url, "refs/heads/" + branch)
             deleted_branches.append(branch)
         deleted_tags: list[str] = []
         for tag in sorted(current_tags):
-            run(["git", "--git-dir", str(mirror), "push", "origin", ":refs/tags/" + tag])
+            delete_remote_ref(url, "refs/tags/" + tag)
             deleted_tags.append(tag)
 
         final_branches, final_tags = list_remote_refs(url)
@@ -341,6 +387,11 @@ def execute(args: argparse.Namespace, config: dict[str, Any], source_root: Path)
         })
         atomic_json(backup / "migration-report.json", report)
         return report
+    except Exception as exc:
+        if backup is not None and backup.exists():
+            report.update({"status": "failed", "failed_stage": stage, "error": str(exc)[:500], "failed_at": datetime.now(timezone.utc).isoformat()})
+            atomic_json(backup / "migration-report.json", report)
+        raise
     finally:
         shutil.rmtree(lock, ignore_errors=True)
 
