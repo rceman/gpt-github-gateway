@@ -43,6 +43,16 @@ func TestBranchPatternExpansion(t *testing.T) {
 	}
 }
 
+func TestBranchPatternExpansionAllowsHyphenatedProjectIDs(t *testing.T) {
+	branch, err := ExpandBranchPattern("project/{gateway_id}/{project_id}", "home_pc", "gpt-github-gateway")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if branch != "project/home_pc/gpt-github-gateway" {
+		t.Fatalf("unexpected branch %q", branch)
+	}
+}
+
 func TestRejectsInvalidBranchPatterns(t *testing.T) {
 	for _, pattern := range []string{"project/{unknown}", "project/{gateway_id}/../x", "project/{gateway_id}\\x", "project/{gateway_id}/{project_id}"} {
 		projectID := ""

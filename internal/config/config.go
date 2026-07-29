@@ -367,7 +367,7 @@ func ValidateBranchName(value string) error {
 	if value == "" || value == "HEAD" || strings.HasPrefix(value, "-") || strings.HasPrefix(value, "/") || strings.HasSuffix(value, "/") {
 		return errors.New("invalid Git branch name")
 	}
-	if strings.Contains(value, "//") || strings.Contains(value, "..") || strings.Contains(value, "@{") || strings.ContainsAny(value, "\\ ~^:?*[\x00-\x20\x7f") {
+	if strings.Contains(value, "//") || strings.Contains(value, "..") || strings.Contains(value, "@{") || strings.ContainsAny(value, "\\ ~^:?*") || strings.IndexFunc(value, func(r rune) bool { return r <= 0x20 || r == 0x7f }) >= 0 {
 		return errors.New("invalid Git branch name")
 	}
 	for _, segment := range strings.Split(value, "/") {
